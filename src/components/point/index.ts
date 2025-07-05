@@ -1,0 +1,5 @@
+export { default as GeoCSS2D } from './GeoCSS2D.vue'
+export { default as GeoText } from './GeoText.vue'
+export { default as GeoIcon } from './GeoIcon.vue'
+export { default as GeoParticle } from './GeoParticle.vue'
+export { default as GeoPoint } from './GeoPoint.vue'

@@ -1,0 +1,48 @@
+{
+  "name": "@icegl/geokit",
+  "private": false,
+  "version": "0.0.1",
+  "type": "module",
+  "main": "dist/index.umd.js",
+  "module": "dist/index.es.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "package.json"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build:all": "npm run build && npm run build:docs",
+    "build": "vite build --config vite.npm.config.ts",
+    "build:docs": "vite build --config vite.config.ts",
+    "preview": "vite preview",
+    "release": "node scripts/release.js",
+    "release:minor": "node scripts/release.js minor",
+    "release:major": "node scripts/release.js major"
+  },
+  "dependencies": {
+    "3d-tiles-renderer": "^0.4.11",
+    "@takram/three-geospatial": "^0.3.0",
+    "@tresjs/cientos": "^4.3.1",
+    "@tresjs/core": "^4.3.6",
+    "@tresjs/post-processing": "^2.4.0",
+    "delaunator": "^5.0.1",
+    "gsap": "^3.13.0",
+    "three": "^0.178.0",
+    "vue": "^3.5.17"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.10",
+    "@types/three": "^0.178.0",
+    "@vitejs/plugin-vue": "^6.0.0",
+    "@vue/tsconfig": "^0.7.0",
+    "rollup-plugin-visualizer": "^6.0.3",
+    "typescript": "~5.8.3",
+    "vite": "^7.0.0",
+    "vite-plugin-dts": "^4.5.4",
+    "vue-tsc": "^2.2.10"
+  },
+  "description": "This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.",
+  "author": "",
+  "license": "ISC"
+}
