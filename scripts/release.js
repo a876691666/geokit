@@ -93,7 +93,16 @@ runCommand('npm run build:all', '构建项目失败');
 // 提交更改
 console.log('\n提交版本更改...');
 runCommand('git add package.json', '添加package.json到暂存区失败');
-runCommand('git add docs/', '添加docs/到暂存区失败');
+
+// 检查docs目录是否存在
+const docsPath = path.join(rootDir, 'docs');
+if (fs.existsSync(docsPath)) {
+  console.log('检测到docs目录，添加到暂存区...');
+  runCommand('git add docs/', '添加docs/到暂存区失败');
+} else {
+  console.log('docs目录不存在，跳过添加到暂存区');
+}
+
 runCommand(`git commit -m "release: v${newVersion}"`, '提交更改失败');
 
 // 添加标签
