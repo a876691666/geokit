@@ -7,7 +7,7 @@ import { useTresContext, useRenderLoop } from "@tresjs/core";
 import { TilesRenderer, GlobeControls } from "3d-tiles-renderer";
 import { TilesFadePlugin, UpdateOnChangePlugin, XYZTilesPlugin } from "3d-tiles-renderer/plugins";
 import { GeoTilesConfig } from "../../config/type";
-import { markRaw } from "vue";
+import { markRaw, watch, onUnmounted } from "vue";
 
 const { camera, renderer, scene } = useTresContext() as any;
 
@@ -48,6 +48,17 @@ let tiles = markRaw<TilesRenderer>(new TilesRenderer(props.url));
 let controls: GlobeControls | null = null;
 
 function reinstantiateTiles() {
+  // 清理旧的实例
+  if (tiles) {
+    tiles.dispose();
+  }
+  if (controls) {
+    controls.dispose();
+  }
+
+  // 创建新的 tiles 实例
+  tiles = markRaw<TilesRenderer>(new TilesRenderer(props.url));
+
   tiles.registerPlugin(new TilesFadePlugin(tilesConfig.tilesPlugins.fadePlugin));
   tiles.registerPlugin(new UpdateOnChangePlugin());
   tiles.registerPlugin(new XYZTilesPlugin(tilesConfig.tilesPlugins.xyzPlugin));
@@ -71,6 +82,25 @@ function reinstantiateTiles() {
 
 reinstantiateTiles();
 
+// 监听 URL 变化
+watch(
+  () => props.url,
+  (newUrl, oldUrl) => {
+    if (newUrl !== oldUrl) {
+      reinstantiateTiles();
+    }
+  }
+);
+
+// 监听 tilesConfig 变化
+watch(
+  () => props.tilesConfig,
+  () => {
+    reinstantiateTiles();
+  },
+  { deep: true }
+);
+
 const { onBeforeLoop } = useRenderLoop();
 
 onBeforeLoop(() => {
@@ -79,6 +109,16 @@ onBeforeLoop(() => {
   if (tiles) {
     tiles.setResolutionFromRenderer(camera.value, renderer.value);
     tiles.update();
+  }
+});
+
+// 组件卸载时清理资源
+onUnmounted(() => {
+  if (tiles) {
+    tiles.dispose();
+  }
+  if (controls) {
+    controls.dispose();
   }
 });
 </script>
