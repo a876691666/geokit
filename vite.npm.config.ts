@@ -30,7 +30,7 @@ export default defineConfig({
     lib: {
       entry: path.resolve(__dirname, "src/index.ts"),
       name: packageJson.name,
-      formats: ["umd"],
+      formats: ["umd", "es"],
       fileName: (format) => `index.${format}.js`,
     },
     minify: true,
