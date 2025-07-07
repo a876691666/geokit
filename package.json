@@ -26,6 +26,7 @@
     "@tresjs/cientos": "^4.3.1",
     "@tresjs/core": "^4.3.6",
     "@tresjs/post-processing": "^2.4.0",
+    "@turf/turf": "^7.2.0",
     "delaunator": "^5.0.1",
     "gsap": "^3.13.0",
     "three": "^0.178.0",

@@ -40,15 +40,15 @@ const props = withDefaults(
         feather: 0.1,
       },
       ambientLight: {
-        color: "red",
-        intensity: 0.015,
+        color: "#fff",
+        intensity: 1,
       },
       directionalLight: {
-        color: "red",
+        color: "#fff",
         intensity: 2,
         position: [-1500, 500, 500],
       },
-      background: "/plugins/topoProject/image/farm_field_puresky_2k.jpg",
+      background: "/farm_field_puresky_2k.jpg",
     }),
   }
 );

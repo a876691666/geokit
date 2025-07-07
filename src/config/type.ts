@@ -106,3 +106,26 @@ export type Point<T = {}> = {
 } & T;
 
 export type Line<T = {}> = Point<T>[];
+
+// GeoJSON类型定义
+export interface GeoJSONPolygon {
+  type: "Polygon";
+  coordinates: number[][][]; // [外环, 内环1, 内环2, ...]
+}
+
+export interface GeoJSONMultiPolygon {
+  type: "MultiPolygon";
+  coordinates: number[][][][]; // [[多边形1], [多边形2], ...]
+}
+
+export interface GeoJSONLineString {
+  type: "LineString";
+  coordinates: number[][]; // [[lon, lat], [lon, lat], ...]
+}
+
+export interface GeoJSONMultiLineString {
+  type: "MultiLineString";
+  coordinates: number[][][]; // [[[lon, lat], [lon, lat]], [[lon, lat], [lon, lat]], ...]
+}
+
+export type GeoJSONGeometry = GeoJSONPolygon | GeoJSONMultiPolygon | GeoJSONLineString | GeoJSONMultiLineString;

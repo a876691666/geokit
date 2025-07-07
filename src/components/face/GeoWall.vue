@@ -4,125 +4,168 @@ import {
   Mesh,
   BufferGeometry,
   Float32BufferAttribute,
-  MeshBasicMaterial,
-  Group,
   Vector3,
-  DoubleSide,
-  Color,
-  Texture,
 } from "three";
-import { calculateCenterPoint, convertGeoPointsToVector3 } from "../line/utils";
+
 import { lonlatToECEF } from "../../utils/controls";
-import { useResourceId } from "../common/hooks";
-import { Point } from "@/config/type";
+import { Point, GeoJSONGeometry } from "@/config/type";
 
 interface GeoWallProps {
-  points: Point[];
-  color?: string;
-  opacity?: number;
-  wireframe?: boolean;
+  geometry: GeoJSONGeometry; // 支持所有 GeoJSON 几何类型
   height?: number; // 墙体高度
   baseHeight?: number; // 底部高度
-  textureId?: string; // 贴图资源ID
 }
 
 const props = withDefaults(defineProps<GeoWallProps>(), {
-  color: "#ffffff",
-  opacity: 1,
-  wireframe: false,
   height: 100, // 默认墙体高度
   baseHeight: 0, // 默认底部高度
-  textureId: "", // 默认无贴图
 });
 
-const group = shallowRef<Group>();
-const mesh = shallowRef<Mesh<BufferGeometry, MeshBasicMaterial>>();
-const positions = ref<Vector3[]>([]);
+const mesh = shallowRef<Mesh<BufferGeometry>>();
 const centerPoint = ref<Vector3>(new Vector3());
 
-// 使用资源管理器
-const { getResourceById } = useResourceId();
+/**
+ * 将 GeoJSON 坐标转换为 Point 格式
+ */
+const coordinatesToPoints = (coordinates: number[][]): Point[] => {
+  return coordinates.map(([lon, lat, height = 0]) => ({
+    lon,
+    lat,
+    height,
+  }));
+};
 
-// 贴图资源的 shallowRef
-let textureRef = shallowRef<Texture | null>(null);
+/**
+ * 解析 GeoJSON 几何体，提取所有线段
+ */
+const parseGeoJSONGeometry = (geometry: GeoJSONGeometry): Point[][] => {
+  const lineSegments: Point[][] = [];
+
+  switch (geometry.type) {
+    case "LineString":
+      lineSegments.push(coordinatesToPoints(geometry.coordinates));
+      break;
+    
+    case "MultiLineString":
+      geometry.coordinates.forEach(lineCoords => {
+        lineSegments.push(coordinatesToPoints(lineCoords));
+      });
+      break;
+    
+    case "Polygon":
+      // 对于多边形，将所有环（外环和内环）作为线段处理
+      geometry.coordinates.forEach(ringCoords => {
+        lineSegments.push(coordinatesToPoints(ringCoords));
+      });
+      break;
+    
+    case "MultiPolygon":
+      // 对于多重多边形，将所有多边形的所有环作为线段处理
+      geometry.coordinates.forEach(polygonCoords => {
+        polygonCoords.forEach(ringCoords => {
+          lineSegments.push(coordinatesToPoints(ringCoords));
+        });
+      });
+      break;
+    
+    default:
+      throw new Error(`不支持的几何类型: ${(geometry as any).type}`);
+  }
+
+  return lineSegments;
+};
 
 /**
  * 创建墙体几何体
- * 通过将多边形边界向上拉伸形成立体墙面
+ * 通过将线段向上拉伸形成立体墙面
  */
-const createWallGeometry = (points: Point[]): BufferGeometry => {
-  if (points.length < 3) {
-    throw new Error("墙体至少需要3个点");
+const createWallGeometry = (lineSegments: Point[][], geometryCenter: Vector3): BufferGeometry => {
+  if (lineSegments.length === 0) {
+    throw new Error("没有有效的线段数据");
   }
 
   const vertices: number[] = [];
   const indices: number[] = [];
   const uvs: number[] = [];
+  let vertexIndex = 0;
 
-  // 确保多边形是闭合的
-  const closedPoints = [...points];
-  if (
-    closedPoints[0].lon !== closedPoints[closedPoints.length - 1].lon ||
-    closedPoints[0].lat !== closedPoints[closedPoints.length - 1].lat
-  ) {
-    closedPoints.push(closedPoints[0]);
-  }
+  // 处理每个线段
+  lineSegments.forEach(points => {
+    if (points.length < 2) {
+      console.warn("线段至少需要2个点，跳过");
+      return;
+    }
 
-  // 为每个边界点创建底部和顶部顶点
-  const bottomVertices: Vector3[] = [];
-  const topVertices: Vector3[] = [];
+    // 确保线段有足够的点来形成墙面
+    const segmentPoints = [...points];
+    
+    // 为每个线段点创建底部和顶部顶点
+    const bottomVertices: Vector3[] = [];
+    const topVertices: Vector3[] = [];
 
-  closedPoints.forEach((point) => {
-    // 底部顶点
-    const bottomPos = lonlatToECEF(point.lon, point.lat, props.baseHeight);
-    bottomVertices.push(new Vector3(bottomPos.x, bottomPos.y, bottomPos.z));
+    segmentPoints.forEach((point) => {
+      // 底部顶点
+      const bottomPos = lonlatToECEF(point.lon, point.lat, props.baseHeight);
+      bottomVertices.push(new Vector3(
+        bottomPos.x - geometryCenter.x,
+        bottomPos.y - geometryCenter.y,
+        bottomPos.z - geometryCenter.z
+      ));
 
-    // 顶部顶点
-    const topPos = lonlatToECEF(point.lon, point.lat, props.baseHeight + props.height);
-    topVertices.push(new Vector3(topPos.x, topPos.y, topPos.z));
+      // 顶部顶点
+      const topPos = lonlatToECEF(point.lon, point.lat, props.baseHeight + props.height);
+      topVertices.push(new Vector3(
+        topPos.x - geometryCenter.x,
+        topPos.y - geometryCenter.y,
+        topPos.z - geometryCenter.z
+      ));
+    });
+
+    // 计算沿边界的累积距离，用于UV的x坐标
+    const distances: number[] = [0]; // 起点距离为0
+    let totalDistance = 0;
+
+    for (let i = 1; i < bottomVertices.length; i++) {
+      const distance = bottomVertices[i - 1].distanceTo(bottomVertices[i]);
+      totalDistance += distance;
+      distances.push(totalDistance);
+    }
+
+    // 添加底部顶点和对应的UV坐标
+    bottomVertices.forEach((vertex, index) => {
+      vertices.push(vertex.x, vertex.y, vertex.z);
+      // 底部UV: x为归一化的距离，y为0
+      const normalizedDistance = totalDistance > 0 ? distances[index] / totalDistance : 0;
+      uvs.push(normalizedDistance, 0);
+    });
+
+    // 添加顶部顶点和对应的UV坐标
+    topVertices.forEach((vertex, index) => {
+      vertices.push(vertex.x, vertex.y, vertex.z);
+      // 顶部UV: x为归一化的距离，y为1
+      const normalizedDistance = totalDistance > 0 ? distances[index] / totalDistance : 0;
+      uvs.push(normalizedDistance, 1);
+    });
+
+    const numPoints = bottomVertices.length;
+
+    // 创建墙面（每两个相邻点之间的四边形，分解为两个三角形）
+    for (let i = 0; i < numPoints - 1; i++) {
+      const bottomCurrent = vertexIndex + i;
+      const bottomNext = vertexIndex + i + 1;
+      const topCurrent = vertexIndex + i + numPoints;
+      const topNext = vertexIndex + i + 1 + numPoints;
+
+      // 第一个三角形 (底部当前 -> 底部下一个 -> 顶部当前)
+      indices.push(bottomCurrent, bottomNext, topCurrent);
+
+      // 第二个三角形 (底部下一个 -> 顶部下一个 -> 顶部当前)
+      indices.push(bottomNext, topNext, topCurrent);
+    }
+
+    // 更新顶点索引偏移量
+    vertexIndex += numPoints * 2;
   });
-
-  // 计算沿边界的累积距离，用于UV的x坐标
-  const distances: number[] = [0]; // 起点距离为0
-  let totalDistance = 0;
-
-  for (let i = 1; i < bottomVertices.length; i++) {
-    const distance = bottomVertices[i - 1].distanceTo(bottomVertices[i]);
-    totalDistance += distance;
-    distances.push(totalDistance);
-  }
-
-  // 添加底部顶点和对应的UV坐标
-  bottomVertices.forEach((vertex, index) => {
-    vertices.push(vertex.x, vertex.y, vertex.z);
-    // 底部UV: x为归一化的距离，y为0
-    const normalizedDistance = totalDistance > 0 ? distances[index] / totalDistance : 0;
-    uvs.push(normalizedDistance, 0);
-  });
-
-  // 添加顶部顶点和对应的UV坐标
-  topVertices.forEach((vertex, index) => {
-    vertices.push(vertex.x, vertex.y, vertex.z);
-    // 顶部UV: x为归一化的距离，y为1
-    const normalizedDistance = totalDistance > 0 ? distances[index] / totalDistance : 0;
-    uvs.push(normalizedDistance, 1);
-  });
-
-  const numPoints = bottomVertices.length;
-
-  // 创建墙面（每两个相邻点之间的四边形，分解为两个三角形）
-  for (let i = 0; i < numPoints - 1; i++) {
-    const bottomCurrent = i;
-    const bottomNext = i + 1;
-    const topCurrent = i + numPoints;
-    const topNext = i + 1 + numPoints;
-
-    // 第一个三角形 (底部当前 -> 底部下一个 -> 顶部当前)
-    indices.push(bottomCurrent, bottomNext, topCurrent);
-
-    // 第二个三角形 (底部下一个 -> 顶部下一个 -> 顶部当前)
-    indices.push(bottomNext, topNext, topCurrent);
-  }
 
   // 创建BufferGeometry
   const geometry = new BufferGeometry();
@@ -134,134 +177,68 @@ const createWallGeometry = (points: Point[]): BufferGeometry => {
   return geometry;
 };
 
-// 更新材质贴图的函数
-const updateMaterialTexture = () => {
-  if (mesh.value) {
-    if (textureRef.value) {
-      mesh.value.material.map = textureRef.value;
-    } else {
-      mesh.value.material.map = null;
-    }
-    mesh.value.material.needsUpdate = true;
-  }
-};
-
 const createWall = () => {
-  if (props.points.length < 3) {
-    console.warn("墙体至少需要3个点");
-    return;
+  try {
+    // 解析几何体获取线段
+    const lineSegments = parseGeoJSONGeometry(props.geometry);
+    
+    if (lineSegments.length === 0) {
+      console.warn("没有有效的线段数据");
+      return;
+    }
+
+    // 计算几何体中心点用于偏移
+    const geometryCenter = calculateGeometryCenter(props.geometry);
+    centerPoint.value = geometryCenter;
+
+    // 创建墙体几何体
+    const geometry = createWallGeometry(lineSegments, geometryCenter);
+
+    // 创建网格（不创建材质，通过slot传入）
+    mesh.value = new Mesh(geometry);
+    mesh.value.renderOrder = 1;
+  } catch (error) {
+    console.error("创建墙体失败:", error);
   }
-
-  // 创建组
-  group.value = new Group();
-
-  // 转换所有点到Three.js坐标
-  positions.value = convertGeoPointsToVector3(props.points);
-  centerPoint.value = calculateCenterPoint(positions.value);
-
-  // 创建墙体几何体
-  const geometry = createWallGeometry(props.points);
-
-  // 调整几何体位置为相对坐标
-  const positionAttribute = geometry.getAttribute("position");
-  const positionArray = positionAttribute.array as Float32Array;
-
-  for (let i = 0; i < positionArray.length; i += 3) {
-    positionArray[i] -= centerPoint.value.x;
-    positionArray[i + 1] -= centerPoint.value.y;
-    positionArray[i + 2] -= centerPoint.value.z;
-  }
-  positionAttribute.needsUpdate = true;
-
-  // 创建材质
-  const materialOptions: any = {
-    color: new Color(props.color),
-    transparent: props.opacity < 1,
-    opacity: props.opacity,
-    side: DoubleSide,
-    wireframe: props.wireframe,
-  };
-
-  // 如果有贴图ID，通过资源管理器获取纹理
-  if (props.textureId && textureRef.value) {
-    materialOptions.map = textureRef.value;
-  }
-
-  const material = new MeshBasicMaterial(materialOptions);
-
-  // 创建网格
-  mesh.value = new Mesh(geometry, material);
-  group.value.add(mesh.value);
-  group.value.position.copy(centerPoint.value);
 };
 
 const updateGeometry = () => {
-  if (mesh.value && props.points.length >= 3) {
-    // 重新创建几何体
-    const oldGeometry = mesh.value.geometry;
-    const newGeometry = createWallGeometry(props.points);
+  if (mesh.value) {
+    try {
+      // 重新解析几何体
+      const lineSegments = parseGeoJSONGeometry(props.geometry);
+      
+      if (lineSegments.length === 0) {
+        console.warn("没有有效的线段数据");
+        return;
+      }
 
-    // 更新位置
-    positions.value = convertGeoPointsToVector3(props.points);
-    centerPoint.value = calculateCenterPoint(positions.value);
+      // 重新创建几何体
+      const oldGeometry = mesh.value.geometry;
+      
+      // 计算几何体中心点用于偏移
+      const geometryCenter = calculateGeometryCenter(props.geometry);
+      centerPoint.value = geometryCenter;
+      
+      const newGeometry = createWallGeometry(lineSegments, geometryCenter);
 
-    // 调整几何体位置为相对坐标
-    const positionAttribute = newGeometry.getAttribute("position");
-    const positionArray = positionAttribute.array as Float32Array;
+      mesh.value.geometry = newGeometry;
 
-    for (let i = 0; i < positionArray.length; i += 3) {
-      positionArray[i] -= centerPoint.value.x;
-      positionArray[i + 1] -= centerPoint.value.y;
-      positionArray[i + 2] -= centerPoint.value.z;
+      // 清理旧几何体
+      oldGeometry.dispose();
+    } catch (error) {
+      console.error("更新几何体失败:", error);
     }
-    positionAttribute.needsUpdate = true;
-
-    mesh.value.geometry = newGeometry;
-    group.value!.position.copy(centerPoint.value);
-
-    // 清理旧几何体
-    oldGeometry.dispose();
   }
 };
 
 // 监听属性变化
 watch(
-  () => props.points,
+  () => props.geometry,
   () => {
     updateGeometry();
   },
   { deep: true }
-);
-
-watch(
-  () => props.color,
-  (newColor) => {
-    if (mesh.value) {
-      mesh.value.material.color.set(newColor);
-      mesh.value.material.needsUpdate = true;
-    }
-  }
-);
-
-watch(
-  () => props.opacity,
-  (newOpacity) => {
-    if (mesh.value) {
-      mesh.value.material.opacity = newOpacity;
-      mesh.value.material.transparent = newOpacity < 1;
-      mesh.value.material.needsUpdate = true;
-    }
-  }
-);
-
-watch(
-  () => props.wireframe,
-  (newWireframe) => {
-    if (mesh.value) {
-      mesh.value.material.wireframe = newWireframe;
-      mesh.value.material.needsUpdate = true;
-    }
-  }
 );
 
 watch(
@@ -278,27 +255,31 @@ watch(
   }
 );
 
-// 监听贴图ID变化
-watch(
-  () => props.textureId,
-  (newTextureId) => {
-    if (newTextureId) {
-      // 获取贴图的 shallowRef
-      textureRef = getResourceById(newTextureId);
-    } else {
-      textureRef = shallowRef<Texture | null>(null);
-    }
-  },
-  { immediate: true }
-);
+// 中心点偏移机制 - 计算几何体的中心点用于偏移
+const calculateGeometryCenter = (geometry: GeoJSONGeometry): Vector3 => {
+  const lineSegments = parseGeoJSONGeometry(geometry);
+  if (lineSegments.length === 0) return new Vector3();
 
-// 监听贴图资源的变化
-watch(
-  () => textureRef.value,
-  () => {
-    updateMaterialTexture();
-  }
-);
+  let totalLon = 0;
+  let totalLat = 0;
+  let totalPoints = 0;
+
+  lineSegments.forEach((segment) => {
+    segment.forEach((point) => {
+      totalLon += point.lon;
+      totalLat += point.lat;
+      totalPoints++;
+    });
+  });
+
+  if (totalPoints === 0) return new Vector3();
+
+  const centerLon = totalLon / totalPoints;
+  const centerLat = totalLat / totalPoints;
+  const centerHeight = props.baseHeight + props.height / 2;
+
+  return new Vector3(...lonlatToECEF(centerLon, centerLat, centerHeight));
+};
 
 onMounted(() => {
   createWall();
@@ -307,14 +288,14 @@ onMounted(() => {
 onUnmounted(() => {
   if (mesh.value) {
     mesh.value.geometry.dispose();
-    mesh.value.material.dispose();
-  }
-  if (group.value) {
-    group.value.clear();
   }
 });
 </script>
 
 <template>
-  <primitive :object="group" v-if="group"></primitive>
+  <TresGroup v-if="mesh" :position="centerPoint">
+    <primitive :object="mesh">
+      <slot />
+    </primitive>
+  </TresGroup>
 </template>

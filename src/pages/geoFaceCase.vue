@@ -149,6 +149,8 @@
           <div>🌫️ 透明度: {{ currentOpacity.toFixed(1) }}</div>
           <div>📐 线框模式: {{ isWireframe ? "开启" : "关闭" }}</div>
           <div>🔺 当前形状: {{ polygonShapes[currentShapeIndex].name }}</div>
+          <div>📊 数据格式: GeoJSON {{ currentGeometry.type }}</div>
+          <div>🕳️ 洞数量: {{ currentHoleCount }}</div>
           <div>🏗️ 细分程度: {{ currentSubdivisions }}</div>
           <div>📏 面片高度: {{ currentFaceHeight }}m</div>
         </div>
@@ -159,6 +161,8 @@
         <div>🔺 地理多边形 (GeoPolygon) - 基于地理坐标的多边形面片</div>
         <div>🧱 地理墙体 (GeoWall) - 基于多边形边界的立体墙面</div>
         <div style="margin-top: 5px; color: #4caf50">💡 支持动态纹理旋转效果</div>
+        <div style="margin-top: 5px; color: #ff9800">🕳️ 支持多边形扣洞功能</div>
+        <div style="margin-top: 5px; color: #2196f3">📊 支持GeoJSON Polygon/MultiPolygon格式</div>
       </div>
     </div>
   </div>
@@ -168,48 +172,60 @@
     <GeoScene />
     <TDTTiles tk="60e749f74ee948da9887c8a82fc20e09" />
 
-    <!-- 地理多边形 - 使用统一的颜色、透明度、线框设置 -->
-    <GeoTexture
-      id="wall-polygon-1"
-      url="/public/plugins/digitalCity/image/rain.png"
-      :rotate="(Math.PI / 180) * time"
-      :center="[0.5, 0.5]"
+    <!-- 地理多边形 -->
+    <GeoPolygon
+      :geometry="currentGeometry"
+      :subdivisions="currentSubdivisions"
+      :height="currentFaceHeight"
     >
-      <GeoPolygon
-        :points="currentPolygonPoints"
-        :color="currentColor"
-        :opacity="currentOpacity"
-        :wireframe="isWireframe"
-        :subdivisions="currentSubdivisions"
-        :height="currentFaceHeight"
-        textureId="wall-polygon-1"
-      />
-    </GeoTexture>
+      <Suspense fallback="">
+        <UseTexture v-slot="{ textures }" map="/rain.png">
+          <GeoTextureProps :texture="textures.map" :rotation="time * 0.1" :center="[0.5, 0.5]" />
+          <TresMeshStandardMaterial
+            :color="currentColor"
+            :transparent="currentOpacity < 1"
+            :opacity="currentOpacity"
+            :wireframe="isWireframe"
+            :side="DoubleSide"
+            :map="textures.map"
+          />
+        </UseTexture>
+      </Suspense>
+    </GeoPolygon>
 
-    <!-- 地理墙体 - 始终显示，使用统一的颜色、透明度、线框设置 -->
-    <GeoTexture
-      id="wall-texture-1"
-      url="/public/plugins/digitalCity/image/line2.png"
-      :rotate="(Math.PI / 180) * time"
-      :center="[0.5, 0.5]"
-    >
-      <GeoWall
-        :points="currentPolygonPoints"
-        :color="currentColor"
-        :opacity="currentOpacity"
-        :wireframe="isWireframe"
-        :height="50"
-        :baseHeight="0"
-        textureId="wall-texture-1"
-      />
-    </GeoTexture>
+    <!-- 地理墙体 -->
+    <GeoWall :geometry="currentGeometry" :height="50" :baseHeight="0">
+      <Suspense>
+        <UseTexture v-slot="{ textures }" map="/line2.png">
+          <GeoTextureProps :texture="textures.map" :rotation="time * 0.1" :center="[0.5, 0.5]" />
+          <TresMeshStandardMaterial
+            :color="currentColor"
+            :transparent="currentOpacity < 1"
+            :opacity="currentOpacity"
+            :wireframe="isWireframe"
+            :side="DoubleSide"
+            :map="textures.map"
+          />
+        </UseTexture>
+      </Suspense>
+    </GeoWall>
   </GeoCanvas>
 </template>
 
 <script setup lang="ts">
-import { GeoCanvas, GeoControls, TDTTiles, GeoPolygon, GeoWall, GeoTexture, GeoScene } from "..";
+import {
+  GeoCanvas,
+  GeoControls,
+  TDTTiles,
+  GeoPolygon,
+  GeoWall,
+  GeoScene,
+  GeoTextureProps,
+} from "..";
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { GeoPositionConfig } from "../config/type";
+import { DoubleSide, RepeatWrapping } from "three";
+import { UseTexture } from "@tresjs/core";
 
 // 相机位置
 const cameraPosition = ref<GeoPositionConfig>({
@@ -249,64 +265,362 @@ const currentFaceHeight = ref(0.5);
 // 多边形形状配置
 const polygonShapes = [
   {
-    name: "三角形",
-    points: [
-      { lon: 118.778, lat: 32.044, height: 30 },
-      { lon: 118.782, lat: 32.044, height: 30 },
-      { lon: 118.78, lat: 32.048, height: 30 },
-    ],
+    name: "GeoJSON三角形",
+    geometry: {
+      type: "Polygon" as const,
+      coordinates: [
+        [
+          [118.778, 32.044],
+          [118.782, 32.044],
+          [118.78, 32.048],
+          [118.778, 32.044],
+        ],
+      ],
+    },
   },
   {
-    name: "矩形",
-    points: [
-      { lon: 118.778, lat: 32.044, height: 30 },
-      { lon: 118.782, lat: 32.044, height: 30 },
-      { lon: 118.782, lat: 32.048, height: 30 },
-      { lon: 118.778, lat: 32.048, height: 30 },
-    ],
+    name: "GeoJSON矩形",
+    geometry: {
+      type: "Polygon" as const,
+      coordinates: [
+        [
+          [118.778, 32.044],
+          [118.782, 32.044],
+          [118.782, 32.048],
+          [118.778, 32.048],
+          [118.778, 32.044],
+        ],
+      ],
+    },
   },
   {
-    name: "五边形",
-    points: [
-      { lon: 118.78, lat: 32.05, height: 30 },
-      { lon: 118.783, lat: 32.047, height: 30 },
-      { lon: 118.782, lat: 32.043, height: 30 },
-      { lon: 118.778, lat: 32.043, height: 30 },
-      { lon: 118.777, lat: 32.047, height: 30 },
-    ],
+    name: "GeoJSON带洞矩形",
+    geometry: {
+      type: "Polygon" as const,
+      coordinates: [
+        // 外环
+        [
+          [118.778, 32.044],
+          [118.782, 32.044],
+          [118.782, 32.048],
+          [118.778, 32.048],
+          [118.778, 32.044],
+        ],
+        // 内环（洞）
+        [
+          [118.7792, 32.0452],
+          [118.7808, 32.0452],
+          [118.7808, 32.0468],
+          [118.7792, 32.0468],
+          [118.7792, 32.0452],
+        ],
+      ],
+    },
   },
   {
-    name: "六边形",
-    points: [
-      { lon: 118.78, lat: 32.05, height: 30 },
-      { lon: 118.783, lat: 32.048, height: 30 },
-      { lon: 118.783, lat: 32.045, height: 30 },
-      { lon: 118.78, lat: 32.043, height: 30 },
-      { lon: 118.777, lat: 32.045, height: 30 },
-      { lon: 118.777, lat: 32.048, height: 30 },
-    ],
+    name: "GeoJSON复杂多边形",
+    geometry: {
+      type: "Polygon" as const,
+      coordinates: [
+        [
+          [118.775, 32.045],
+          [118.783, 32.045],
+          [118.783, 32.05],
+          [118.775, 32.05],
+          [118.775, 32.045],
+        ],
+      ],
+    },
   },
   {
-    name: "复杂形状",
-    points: [
-      { lon: 118.775, lat: 32.045, height: 30 },
-      { lon: 118.779, lat: 32.052, height: 30 },
-      { lon: 118.783, lat: 32.049, height: 30 },
-      { lon: 118.785, lat: 32.045, height: 30 },
-      { lon: 118.783, lat: 32.041, height: 30 },
-      { lon: 118.779, lat: 32.038, height: 30 },
-      { lon: 118.775, lat: 32.041, height: 30 },
-    ],
+    name: "GeoJSON大型带洞多边形",
+    geometry: {
+      type: "Polygon" as const,
+      coordinates: [
+        // 外环
+        [
+          [118.775, 32.042],
+          [118.785, 32.042],
+          [118.785, 32.052],
+          [118.775, 32.052],
+          [118.775, 32.042],
+        ],
+        // 内环（洞）
+        [
+          [118.778, 32.045],
+          [118.782, 32.045],
+          [118.782, 32.049],
+          [118.778, 32.049],
+          [118.778, 32.045],
+        ],
+      ],
+    },
+  },
+  {
+    name: "GeoJSON多洞多边形",
+    geometry: {
+      type: "Polygon" as const,
+      coordinates: [
+        // 外环
+        [
+          [118.774, 32.041],
+          [118.786, 32.041],
+          [118.786, 32.053],
+          [118.774, 32.053],
+          [118.774, 32.041],
+        ],
+        // 第一个洞（左上）
+        [
+          [118.776, 32.05],
+          [118.779, 32.05],
+          [118.779, 32.052],
+          [118.776, 32.052],
+          [118.776, 32.05],
+        ],
+        // 第二个洞（右上）
+        [
+          [118.781, 32.05],
+          [118.784, 32.05],
+          [118.784, 32.052],
+          [118.781, 32.052],
+          [118.781, 32.05],
+        ],
+        // 第三个洞（中央）
+        [
+          [118.778, 32.046],
+          [118.782, 32.046],
+          [118.782, 32.048],
+          [118.778, 32.048],
+          [118.778, 32.046],
+        ],
+        // 第四个洞（左下）
+        [
+          [118.776, 32.042],
+          [118.779, 32.042],
+          [118.779, 32.044],
+          [118.776, 32.044],
+          [118.776, 32.042],
+        ],
+        // 第五个洞（右下）
+        [
+          [118.781, 32.042],
+          [118.784, 32.042],
+          [118.784, 32.044],
+          [118.781, 32.044],
+          [118.781, 32.042],
+        ],
+      ],
+    },
+  },
+  {
+    name: "GeoJSON圆形洞多边形",
+    geometry: {
+      type: "Polygon" as const,
+      coordinates: [
+        // 外环（大矩形）
+        [
+          [118.773, 32.04],
+          [118.787, 32.04],
+          [118.787, 32.054],
+          [118.773, 32.054],
+          [118.773, 32.04],
+        ],
+        // 圆形洞（用多边形近似）
+        [
+          [118.78, 32.047],
+          [118.7805, 32.0465],
+          [118.781, 32.0467],
+          [118.7815, 32.047],
+          [118.7818, 32.0475],
+          [118.782, 32.048],
+          [118.7818, 32.0485],
+          [118.7815, 32.049],
+          [118.781, 32.0493],
+          [118.7805, 32.0495],
+          [118.78, 32.0493],
+          [118.7795, 32.049],
+          [118.7792, 32.0485],
+          [118.779, 32.048],
+          [118.7792, 32.0475],
+          [118.7795, 32.047],
+          [118.78, 32.0467],
+          [118.78, 32.047],
+        ],
+      ],
+    },
+  },
+  {
+    name: "GeoJSON嵌套洞多边形",
+    geometry: {
+      type: "Polygon" as const,
+      coordinates: [
+        // 外环
+        [
+          [118.772, 32.039],
+          [118.788, 32.039],
+          [118.788, 32.055],
+          [118.772, 32.055],
+          [118.772, 32.039],
+        ],
+        // 大洞
+        [
+          [118.775, 32.042],
+          [118.785, 32.042],
+          [118.785, 32.052],
+          [118.775, 32.052],
+          [118.775, 32.042],
+        ],
+      ],
+    },
+  },
+  {
+    name: "GeoJSON星形洞多边形",
+    geometry: {
+      type: "Polygon" as const,
+      coordinates: [
+        // 外环（大矩形）
+        [
+          [118.774, 32.041],
+          [118.786, 32.041],
+          [118.786, 32.053],
+          [118.774, 32.053],
+          [118.774, 32.041],
+        ],
+        // 星形洞
+        [
+          [118.78, 32.044],
+          [118.7805, 32.0455],
+          [118.782, 32.046],
+          [118.7815, 32.0475],
+          [118.7825, 32.049],
+          [118.78, 32.0485],
+          [118.7775, 32.049],
+          [118.7785, 32.0475],
+          [118.778, 32.046],
+          [118.7795, 32.0455],
+          [118.78, 32.044],
+        ],
+      ],
+    },
+  },
+  {
+    name: "GeoJSON多重多边形",
+    geometry: {
+      type: "MultiPolygon" as const,
+      coordinates: [
+        // 第一个多边形
+        [
+          [
+            [118.775, 32.04],
+            [118.78, 32.04],
+            [118.78, 32.044],
+            [118.775, 32.044],
+            [118.775, 32.04],
+          ],
+        ],
+        // 第二个多边形
+        [
+          [
+            [118.782, 32.046],
+            [118.787, 32.046],
+            [118.787, 32.05],
+            [118.782, 32.05],
+            [118.782, 32.046],
+          ],
+        ],
+      ],
+    },
+  },
+  {
+    name: "GeoJSON多重带洞多边形",
+    geometry: {
+      type: "MultiPolygon" as const,
+      coordinates: [
+        // 第一个多边形（带洞）
+        [
+          // 外环
+          [
+            [118.773, 32.039],
+            [118.779, 32.039],
+            [118.779, 32.045],
+            [118.773, 32.045],
+            [118.773, 32.039],
+          ],
+          // 内环（洞）
+          [
+            [118.775, 32.041],
+            [118.777, 32.041],
+            [118.777, 32.043],
+            [118.775, 32.043],
+            [118.775, 32.041],
+          ],
+        ],
+        // 第二个多边形（带洞）
+        [
+          // 外环
+          [
+            [118.781, 32.047],
+            [118.787, 32.047],
+            [118.787, 32.053],
+            [118.781, 32.053],
+            [118.781, 32.047],
+          ],
+          // 内环（洞）
+          [
+            [118.783, 32.049],
+            [118.785, 32.049],
+            [118.785, 32.051],
+            [118.783, 32.051],
+            [118.783, 32.049],
+          ],
+        ],
+        // 第三个多边形（多个洞）
+        [
+          // 外环
+          [
+            [118.774, 32.055],
+            [118.786, 32.055],
+            [118.786, 32.061],
+            [118.774, 32.061],
+            [118.774, 32.055],
+          ],
+          // 第一个洞
+          [
+            [118.776, 32.057],
+            [118.778, 32.057],
+            [118.778, 32.059],
+            [118.776, 32.059],
+            [118.776, 32.057],
+          ],
+          // 第二个洞
+          [
+            [118.782, 32.057],
+            [118.784, 32.057],
+            [118.784, 32.059],
+            [118.782, 32.059],
+            [118.782, 32.057],
+          ],
+        ],
+      ],
+    },
   },
 ];
 
 const currentShapeIndex = ref(0);
-const currentPolygonPoints = computed(() => {
-  return polygonShapes[currentShapeIndex.value].points.map((point) => ({
-    lon: point.lon,
-    lat: point.lat,
-    height: point.height,
-  }));
+
+const currentGeometry = computed(() => {
+  return polygonShapes[currentShapeIndex.value].geometry;
+});
+
+// 计算洞的数量
+const currentHoleCount = computed(() => {
+  const geometry = currentGeometry.value;
+  if (geometry.type === "Polygon") {
+    return geometry.coordinates.length - 1; // 减去外环
+  } else {
+    // MultiPolygon的洞数量是所有多边形的洞数量之和
+    return geometry.coordinates.reduce((total, polygon) => total + (polygon.length - 1), 0);
+  }
 });
 
 // 配置选项

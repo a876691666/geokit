@@ -1,6 +1,7 @@
 export * from "./components/point";
 export * from "./components/line";
 export * from "./components/face";
+export * from "./components/body";
 export * from "./components/common";
 export * from "./components/tiles";
 export * from "./config/type";

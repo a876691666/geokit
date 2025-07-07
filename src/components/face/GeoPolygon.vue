@@ -1,289 +1,245 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, shallowRef, ref, watch } from "vue";
-import {
-  Mesh,
-  BufferGeometry,
-  Float32BufferAttribute,
-  MeshBasicMaterial,
-  Group,
-  Vector3,
-  DoubleSide,
-  Color,
-  Texture,
-} from "three";
+import { Mesh, BufferGeometry, Float32BufferAttribute, Vector3 } from "three";
 // @ts-ignore
 import Delaunator from "delaunator";
-import { calculateCenterPoint, convertGeoPointsToVector3 } from "../line/utils";
+
 import { lonlatToECEF } from "../../utils/controls";
-import { useResourceId } from "../common/hooks";
-import { Point } from "@/config/type";
+import { Point, GeoJSONGeometry } from "@/config/type";
+import {
+  isClockWise,
+  mergeOverlappingPoints,
+  subdividePolygonBoundary,
+  triangulateWithDelaunator,
+  generateInteriorPoints,
+} from "../../utils/geometry";
 
 interface GeoPolygonProps {
-  points: Point[];
-  color?: string;
-  opacity?: number;
-  wireframe?: boolean;
-  subdivisions?: number; // 细分程度，用于生成更均匀的三角面
-  height?: number; // 独立的高度参数
-  textureId?: string; // 贴图资源ID
+  geometry: GeoJSONGeometry; // 只支持GeoJSON格式
+  subdivisions?: number;
+  height?: number;
 }
 
 const props = withDefaults(defineProps<GeoPolygonProps>(), {
-  color: "#ffffff",
-  opacity: 1,
-  wireframe: false,
   subdivisions: 2,
-  height: 30, // 默认高度
-  textureId: "", // 默认无贴图
+  height: 30,
 });
 
-const group = shallowRef<Group>();
-const mesh = shallowRef<Mesh<BufferGeometry, MeshBasicMaterial>>();
-const positions = ref<Vector3[]>([]);
+const mesh = shallowRef<Mesh<BufferGeometry>>();
 const centerPoint = ref<Vector3>(new Vector3());
 
-// 使用资源管理器
-const { getResourceById } = useResourceId();
-
-// 贴图资源的 shallowRef
-let textureRef = shallowRef<Texture | null>(null);
-
 /**
- * 判断点是否在多边形内部
+ * 将GeoJSON坐标转换为Point格式（本地版本，使用props.height）
  */
-const isPointInPolygon = (testPoint: [number, number], polygon: [number, number][]): boolean => {
-  let inside = false;
-  const x = testPoint[0];
-  const y = testPoint[1];
-
-  let j = polygon.length - 1;
-  for (let i = 0; i < polygon.length; i++) {
-    const xi = polygon[i][0];
-    const yi = polygon[i][1];
-    const xj = polygon[j][0];
-    const yj = polygon[j][1];
-
-    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) {
-      inside = !inside;
-    }
-    j = i;
-  }
-
-  return inside;
+const coordinatesToPoints = (coordinates: number[][]): Point[] => {
+  return coordinates.map(([lon, lat, height = props.height]) => ({
+    lon,
+    lat,
+    height,
+  }));
 };
 
 /**
- * 使用Delaunator库进行Delaunay三角剖分生成三角面
+ * 解析GeoJSON几何体，统一转换为MultiPolygon格式（本地版本）
  */
-const createTriangulatedGeometry = (points: Point[]): BufferGeometry => {
-  if (points.length < 3) {
-    throw new Error("多边形至少需要3个点");
+const parseGeoJSONGeometryLocal = (
+  geometry: GeoJSONGeometry
+): { contours: Point[][]; holes: Point[][][] } => {
+  let multiPolygonCoords: number[][][][];
+
+  if (geometry.type === "Polygon") {
+    // 将Polygon转换为MultiPolygon格式
+    multiPolygonCoords = [geometry.coordinates];
+  } else if (geometry.type === "MultiPolygon") {
+    multiPolygonCoords = geometry.coordinates;
+  } else {
+    throw new Error("不支持的几何类型，仅支持Polygon和MultiPolygon");
   }
 
-  // 1. 准备边界点（经纬度）
-  const boundaryPoints: [number, number][] = points.map((p) => [p.lon, p.lat]);
+  const contours: Point[][] = [];
+  const holes: Point[][][] = [];
 
-  // 2. 计算边界框
-  const minLon = Math.min(...boundaryPoints.map((p) => p[0]));
-  const maxLon = Math.max(...boundaryPoints.map((p) => p[0]));
-  const minLat = Math.min(...boundaryPoints.map((p) => p[1]));
-  const maxLat = Math.max(...boundaryPoints.map((p) => p[1]));
+  multiPolygonCoords.forEach((polygonCoords) => {
+    if (polygonCoords.length === 0) return;
 
-  // 3. 根据subdivisions参数生成内部网格点
-  const gridWidth = maxLon - minLon;
-  const gridHeight = maxLat - minLat;
-  const stepLon = gridWidth / (props.subdivisions * 5);
-  const stepLat = gridHeight / (props.subdivisions * 5);
+    // 第一个环是外环（轮廓）
+    const contour = coordinatesToPoints(polygonCoords[0]);
+    contours.push(contour);
 
-  // 4. 生成内部点
-  const interiorPoints: [number, number][] = [];
-  for (let lon = minLon + stepLon; lon < maxLon; lon += stepLon) {
-    for (let lat = minLat + stepLat; lat < maxLat; lat += stepLat) {
-      if (isPointInPolygon([lon, lat], boundaryPoints)) {
-        interiorPoints.push([lon, lat]);
+    // 其余的环是内环（洞）
+    const polygonHoles: Point[][] = [];
+    for (let i = 1; i < polygonCoords.length; i++) {
+      const hole = coordinatesToPoints(polygonCoords[i]);
+      polygonHoles.push(hole);
+    }
+    holes.push(polygonHoles);
+  });
+
+  return { contours, holes };
+};
+
+/**
+ * 创建多边形几何体（支持MultiPolygon）
+ */
+const createMultiPolygonGeometry = (geometryCenter: Vector3): BufferGeometry => {
+  const { contours, holes } = parseGeoJSONGeometryLocal(props.geometry);
+
+  if (contours.length === 0) {
+    throw new Error("没有有效的多边形轮廓");
+  }
+
+  const allVertices: number[] = [];
+  const allUVs: number[] = [];
+
+  // 处理每个多边形
+  contours.forEach((contour, polygonIndex) => {
+    if (contour.length < 3) {
+      console.warn(`多边形${polygonIndex}的顶点数少于3，跳过`);
+      return;
+    }
+
+    const polygonHoles = holes[polygonIndex] || [];
+
+    // 准备边界点（经纬度）
+    let boundaryPoints: [number, number][] = contour.map((p) => [p.lon, p.lat]);
+
+    // 准备洞的点
+    let holePoints: [number, number][][] = polygonHoles.map((hole) =>
+      hole.map((p) => [p.lon, p.lat])
+    );
+
+    // 检查和修正方向
+    const reverse = !isClockWise(boundaryPoints);
+    if (reverse) {
+      boundaryPoints.reverse();
+    }
+
+    // 检查洞的方向
+    for (let h = 0; h < holePoints.length; h++) {
+      const hole = holePoints[h];
+      if (isClockWise(hole)) {
+        holePoints[h] = hole.reverse();
       }
     }
-  }
 
-  // 5. 合并所有点（边界点 + 内部点）
-  const allPoints: [number, number][] = [...boundaryPoints, ...interiorPoints];
+    // 合并重叠点
+    mergeOverlappingPoints(boundaryPoints);
+    holePoints.forEach((hole) => mergeOverlappingPoints(hole));
 
-  // 6. 准备delaunator输入数据（扁平数组）
-  const coords: number[] = [];
-  allPoints.forEach((point) => {
-    coords.push(point[0], point[1]); // [lon1, lat1, lon2, lat2, ...]
+    // 根据细分程度对边界进行细分
+    const subdivisionFactor = Math.max(1, props.subdivisions);
+    boundaryPoints = subdividePolygonBoundary(boundaryPoints, subdivisionFactor);
+    holePoints = holePoints.map((hole) => subdividePolygonBoundary(hole, subdivisionFactor));
+
+    // 根据subdivisions参数生成内部网格点
+    const interiorPoints = generateInteriorPoints(boundaryPoints, holePoints, subdivisionFactor);
+
+    // 不再需要添加洞边界附近的约束点，因为我们已经通过边界细分来处理了
+
+    // 执行三角剖分，直接返回三角形顶点
+    const triangleVertices = triangulateWithDelaunator(boundaryPoints, holePoints, interiorPoints);
+
+    // 转换为ECEF坐标
+    const height = props.height ?? 0;
+
+    const xtList = triangleVertices.map((p) => p[0]);
+    const ytList = triangleVertices.map((p) => p[1]);
+
+    // 计算边界框用于UV映射
+    const uvMinLon = Math.min.apply(null, xtList);
+    const uvMaxLon = Math.max.apply(null, xtList);
+    const uvMinLat = Math.min.apply(null, ytList);
+    const uvMaxLat = Math.max.apply(null, ytList);
+
+    const uvGridWidth = uvMaxLon - uvMinLon;
+    const uvGridHeight = uvMaxLat - uvMinLat;
+
+    // 处理每个三角形顶点
+    triangleVertices.forEach(([lon, lat]) => {
+      // 转换为ECEF坐标
+      const ecefPos = lonlatToECEF(lon, lat, height);
+      // 应用中心点偏移，减少顶点数值大小
+      allVertices.push(
+        ecefPos.x - geometryCenter.x,
+        ecefPos.y - geometryCenter.y,
+        ecefPos.z - geometryCenter.z
+      );
+
+      // 计算UV坐标
+      const u = uvGridWidth > 0 ? (lon - uvMinLon) / uvGridWidth : 0;
+      const v = uvGridHeight > 0 ? 1 - (lat - uvMinLat) / uvGridHeight : 0;
+      allUVs.push(u, v);
+    });
   });
 
-  // 7. 执行Delaunay三角剖分
-  const delaunay = Delaunator.from(allPoints);
-
-  // 8. 获取三角形索引
-  const triangles = delaunay.triangles;
-
-  // 9. 转换为ECEF坐标并构建几何体
-  const vertices: number[] = [];
-  const indices: number[] = [];
-
-  // 将所有点转换为ECEF坐标
-  // 使用独立的height参数，如果没有则尝试从第一个点获取，最后默认为0
-  const height = props.height ?? 0;
-  allPoints.forEach(([lon, lat]) => {
-    const ecefPos = lonlatToECEF(lon, lat, height);
-    vertices.push(ecefPos.x, ecefPos.y, ecefPos.z);
-  });
-
-  // 构建三角形索引
-  for (let i = 0; i < triangles.length; i += 3) {
-    indices.push(triangles[i], triangles[i + 1], triangles[i + 2]);
-  }
-
-  // 10. 构建UV坐标（基于经纬度bbox，左上(0,1)到右下(1,0)）
-  const uvs: number[] = [];
-  allPoints.forEach(([lon, lat]) => {
-    // 计算归一化的UV坐标
-    const u = (lon - minLon) / gridWidth; // 经度：左(0)到右(1)
-    const v = 1 - (lat - minLat) / gridHeight; // 纬度：上(1)到下(0)
-    uvs.push(u, v);
-  });
-
-  // 11. 创建BufferGeometry
+  // 创建BufferGeometry（不使用索引）
   const geometry = new BufferGeometry();
-  geometry.setAttribute("position", new Float32BufferAttribute(vertices, 3));
-  geometry.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
-  geometry.setIndex(indices);
+  geometry.setAttribute("position", new Float32BufferAttribute(allVertices, 3));
+  geometry.setAttribute("uv", new Float32BufferAttribute(allUVs, 2));
   geometry.computeVertexNormals();
 
   return geometry;
 };
 
-// 更新材质贴图的函数
-const updateMaterialTexture = () => {
-  if (mesh.value) {
-    if (textureRef.value) {
-      mesh.value.material.map = textureRef.value;
-    } else {
-      mesh.value.material.map = null;
-    }
-    mesh.value.material.needsUpdate = true;
-  }
-};
-
 const createPolygon = () => {
-  if (props.points.length < 3) {
-    console.warn("多边形至少需要3个点");
-    return;
+  try {
+    const { contours } = parseGeoJSONGeometryLocal(props.geometry);
+
+    if (contours.length === 0 || contours[0].length < 3) {
+      console.warn("多边形至少需要3个点");
+      return;
+    }
+
+    // 计算几何体中心点用于偏移
+    const geometryCenter = calculateGeometryCenter(props.geometry);
+    centerPoint.value = geometryCenter;
+
+    // 创建多边形几何体
+    const geometry = createMultiPolygonGeometry(geometryCenter);
+
+    // 创建网格（不创建材质，通过slot传入）
+    mesh.value = new Mesh(geometry);
+    mesh.value.renderOrder = 1;
+  } catch (error) {
+    console.error("创建多边形失败:", error);
   }
-
-  // 创建组
-  group.value = new Group();
-
-  // 转换所有点到Three.js坐标
-  positions.value = convertGeoPointsToVector3(props.points);
-  centerPoint.value = calculateCenterPoint(positions.value);
-
-  // 创建三角剖分几何体
-  const geometry = createTriangulatedGeometry(props.points);
-
-  // 调整几何体位置为相对坐标
-  const positionAttribute = geometry.getAttribute("position");
-  const positionArray = positionAttribute.array as Float32Array;
-
-  for (let i = 0; i < positionArray.length; i += 3) {
-    positionArray[i] -= centerPoint.value.x;
-    positionArray[i + 1] -= centerPoint.value.y;
-    positionArray[i + 2] -= centerPoint.value.z;
-  }
-  positionAttribute.needsUpdate = true;
-
-  // 创建材质
-  const materialOptions: any = {
-    color: new Color(props.color),
-    transparent: props.opacity < 1,
-    opacity: props.opacity,
-    side: DoubleSide,
-    wireframe: props.wireframe,
-  };
-
-  // 如果有贴图ID，通过资源管理器获取纹理
-  if (props.textureId && textureRef.value) {
-    materialOptions.map = textureRef.value;
-  }
-
-  const material = new MeshBasicMaterial(materialOptions);
-
-  // 创建网格
-  mesh.value = new Mesh(geometry, material);
-  group.value.add(mesh.value);
-  group.value.position.copy(centerPoint.value);
 };
 
 const updateGeometry = () => {
-  if (mesh.value && props.points.length >= 3) {
-    // 重新创建几何体
-    const oldGeometry = mesh.value.geometry;
-    const newGeometry = createTriangulatedGeometry(props.points);
+  if (mesh.value) {
+    try {
+      const { contours } = parseGeoJSONGeometryLocal(props.geometry);
 
-    // 更新位置
-    positions.value = convertGeoPointsToVector3(props.points);
-    centerPoint.value = calculateCenterPoint(positions.value);
+      if (contours.length === 0 || contours[0].length < 3) {
+        return;
+      }
 
-    // 调整几何体位置为相对坐标
-    const positionAttribute = newGeometry.getAttribute("position");
-    const positionArray = positionAttribute.array as Float32Array;
+      // 重新创建几何体
+      const oldGeometry = mesh.value.geometry;
 
-    for (let i = 0; i < positionArray.length; i += 3) {
-      positionArray[i] -= centerPoint.value.x;
-      positionArray[i + 1] -= centerPoint.value.y;
-      positionArray[i + 2] -= centerPoint.value.z;
+      // 计算几何体中心点用于偏移
+      const geometryCenter = calculateGeometryCenter(props.geometry);
+      centerPoint.value = geometryCenter;
+
+      const newGeometry = createMultiPolygonGeometry(geometryCenter);
+
+      mesh.value.geometry = newGeometry;
+
+      // 清理旧几何体
+      oldGeometry.dispose();
+    } catch (error) {
+      console.error("更新几何体失败:", error);
     }
-    positionAttribute.needsUpdate = true;
-
-    mesh.value.geometry = newGeometry;
-    group.value!.position.copy(centerPoint.value);
-
-    // 清理旧几何体
-    oldGeometry.dispose();
   }
 };
 
 // 监听属性变化
 watch(
-  () => props.points,
+  () => props.geometry,
   () => {
     updateGeometry();
   },
   { deep: true }
-);
-
-watch(
-  () => props.color,
-  (newColor) => {
-    if (mesh.value) {
-      mesh.value.material.color.set(newColor);
-      mesh.value.material.needsUpdate = true;
-    }
-  }
-);
-
-watch(
-  () => props.opacity,
-  (newOpacity) => {
-    if (mesh.value) {
-      mesh.value.material.opacity = newOpacity;
-      mesh.value.material.transparent = newOpacity < 1;
-      mesh.value.material.needsUpdate = true;
-    }
-  }
-);
-
-watch(
-  () => props.wireframe,
-  (newWireframe) => {
-    if (mesh.value) {
-      mesh.value.material.wireframe = newWireframe;
-      mesh.value.material.needsUpdate = true;
-    }
-  }
 );
 
 watch(
@@ -300,27 +256,31 @@ watch(
   }
 );
 
-// 监听贴图ID变化
-watch(
-  () => props.textureId,
-  (newTextureId) => {
-    if (newTextureId) {
-      // 获取贴图的 shallowRef
-      textureRef = getResourceById(newTextureId);
-    } else {
-      textureRef = shallowRef<Texture | null>(null);
-    }
-  },
-  { immediate: true }
-);
+// 中心点偏移机制 - 计算几何体的中心点用于偏移
+const calculateGeometryCenter = (geometry: GeoJSONGeometry): Vector3 => {
+  const { contours } = parseGeoJSONGeometryLocal(geometry);
+  if (contours.length === 0) return new Vector3();
 
-// 监听贴图资源的变化
-watch(
-  () => textureRef.value,
-  () => {
-    updateMaterialTexture();
-  }
-);
+  let totalLon = 0;
+  let totalLat = 0;
+  let totalPoints = 0;
+
+  contours.forEach((contour) => {
+    contour.forEach((point) => {
+      totalLon += point.lon;
+      totalLat += point.lat;
+      totalPoints++;
+    });
+  });
+
+  if (totalPoints === 0) return new Vector3();
+
+  const centerLon = totalLon / totalPoints;
+  const centerLat = totalLat / totalPoints;
+  const centerHeight = props.height ?? 0;
+
+  return new Vector3(...lonlatToECEF(centerLon, centerLat, centerHeight));
+};
 
 onMounted(() => {
   createPolygon();
@@ -329,14 +289,14 @@ onMounted(() => {
 onUnmounted(() => {
   if (mesh.value) {
     mesh.value.geometry?.dispose?.();
-    mesh.value.material?.dispose?.();
-  }
-  if (group.value) {
-    group.value?.clear?.();
   }
 });
 </script>
 
 <template>
-  <primitive :object="group" v-if="group"></primitive>
+  <TresGroup v-if="mesh" :position="centerPoint">
+    <primitive :object="mesh">
+      <slot />
+    </primitive>
+  </TresGroup>
 </template>
