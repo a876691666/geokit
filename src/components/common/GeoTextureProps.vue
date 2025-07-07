@@ -105,6 +105,124 @@ function setVector2Property(
   }
 }
 
+// 初始化函数：应用所有属性并触发更新
+function initializeTexture() {
+  if (!props.texture) return;
+
+  // 应用基本变换属性
+  if (props.center) {
+    props.texture.center.x = props.center[0];
+    props.texture.center.y = props.center[1];
+  }
+  
+  if (props.rotation !== undefined) {
+    props.texture.rotation = props.rotation;
+  }
+  
+  if (props.scale) {
+    props.texture.repeat.x = props.scale[0];
+    props.texture.repeat.y = props.scale[1];
+  }
+  
+  if (props.repeat) {
+    props.texture.repeat.x = props.repeat[0];
+    props.texture.repeat.y = props.repeat[1];
+  }
+  
+  if (props.offset) {
+    props.texture.offset.x = props.offset[0];
+    props.texture.offset.y = props.offset[1];
+  }
+
+  // 应用包装模式
+  if (props.wrapS !== undefined) {
+    props.texture.wrapS = props.wrapS;
+  }
+  
+  if (props.wrapT !== undefined) {
+    props.texture.wrapT = props.wrapT;
+  }
+
+  // 应用过滤器
+  if (props.magFilter !== undefined) {
+    props.texture.magFilter = props.magFilter;
+  }
+  
+  if (props.minFilter !== undefined) {
+    props.texture.minFilter = props.minFilter;
+  }
+
+  // 应用纹理格式和类型
+  if (props.flipY !== undefined) {
+    props.texture.flipY = props.flipY;
+  }
+  
+  if (props.format !== undefined) {
+    props.texture.format = props.format;
+  }
+  
+  if (props.type !== undefined) {
+    props.texture.type = props.type;
+  }
+
+  // 应用颜色空间
+  if (props.colorSpace !== undefined) {
+    props.texture.colorSpace = props.colorSpace;
+  }
+
+  // 应用生成和更新控制
+  if (props.generateMipmaps !== undefined) {
+    props.texture.generateMipmaps = props.generateMipmaps;
+  }
+  
+  if (props.premultiplyAlpha !== undefined) {
+    props.texture.premultiplyAlpha = props.premultiplyAlpha;
+  }
+  
+  if (props.unpackAlignment !== undefined) {
+    props.texture.unpackAlignment = props.unpackAlignment;
+  }
+
+  // 应用各向异性过滤
+  if (props.anisotropy !== undefined) {
+    props.texture.anisotropy = props.anisotropy;
+  }
+
+  // 应用编码（兼容性）
+  if (props.encoding !== undefined) {
+    (props.texture as any).encoding = props.encoding;
+  }
+
+  // 应用矩阵变换（不需要触发更新）
+  if (props.matrixAutoUpdate !== undefined) {
+    props.texture.matrixAutoUpdate = props.matrixAutoUpdate;
+  }
+
+  // 应用用户数据（不需要触发更新）
+  if (props.userData !== undefined) {
+    props.texture.userData = props.userData;
+  }
+
+  // 应用名称（不需要触发更新）
+  if (props.name !== undefined) {
+    props.texture.name = props.name;
+  }
+
+  // 触发初始更新
+  needsUpdate.value = true;
+}
+
+// 监听texture变化，当texture改变时重新初始化
+watch(
+  () => props.texture,
+  (newTexture) => {
+    if (newTexture) {
+      initializeTexture();
+    }
+  },
+  { immediate: true } // 立即执行，确保初始化时就触发
+);
+
 // 监听纹理中心点变化
 watch(
   () => props.center,
