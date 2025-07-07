@@ -60,52 +60,34 @@ const props = withDefaults(
   {}
 );
 
-// 用于跟踪是否需要更新纹理
-const needsUpdate = ref(false);
-
-// 辅助函数：比较数组是否相等
-function arrayEquals(a: [number, number] | undefined, b: [number, number] | undefined): boolean {
-  if (!a && !b) return true;
-  if (!a || !b) return false;
-  return a[0] === b[0] && a[1] === b[1];
-}
-
 // 辅助函数：比较Vector2是否相等
 function vector2Equals(vector: { x: number; y: number }, array: [number, number]): boolean {
   return vector.x === array[0] && vector.y === array[1];
 }
 
-// 辅助函数：设置纹理属性并标记需要更新
+// 辅助函数：设置纹理属性
 function setTextureProperty<T>(
   currentValue: T,
   newValue: T | undefined,
-  setter: (value: T) => void,
-  needsTextureUpdate: boolean = true
+  setter: (value: T) => void
 ): void {
   if (newValue !== undefined && currentValue !== newValue) {
     setter(newValue);
-    if (needsTextureUpdate) {
-      needsUpdate.value = true;
-    }
   }
 }
 
 // 辅助函数：设置Vector2属性
 function setVector2Property(
   currentVector: { x: number; y: number },
-  newValue: [number, number] | undefined,
-  needsTextureUpdate: boolean = true
+  newValue: [number, number] | undefined
 ): void {
   if (newValue && !vector2Equals(currentVector, newValue)) {
     currentVector.x = newValue[0];
     currentVector.y = newValue[1];
-    if (needsTextureUpdate) {
-      needsUpdate.value = true;
-    }
   }
 }
 
-// 初始化函数：应用所有属性并触发更新
+// 初始化函数：应用所有属性
 function initializeTexture() {
   if (!props.texture) return;
 
@@ -114,21 +96,21 @@ function initializeTexture() {
     props.texture.center.x = props.center[0];
     props.texture.center.y = props.center[1];
   }
-  
+
   if (props.rotation !== undefined) {
     props.texture.rotation = props.rotation;
   }
-  
+
   if (props.scale) {
     props.texture.repeat.x = props.scale[0];
     props.texture.repeat.y = props.scale[1];
   }
-  
+
   if (props.repeat) {
     props.texture.repeat.x = props.repeat[0];
     props.texture.repeat.y = props.repeat[1];
   }
-  
+
   if (props.offset) {
     props.texture.offset.x = props.offset[0];
     props.texture.offset.y = props.offset[1];
@@ -138,7 +120,7 @@ function initializeTexture() {
   if (props.wrapS !== undefined) {
     props.texture.wrapS = props.wrapS;
   }
-  
+
   if (props.wrapT !== undefined) {
     props.texture.wrapT = props.wrapT;
   }
@@ -147,7 +129,7 @@ function initializeTexture() {
   if (props.magFilter !== undefined) {
     props.texture.magFilter = props.magFilter;
   }
-  
+
   if (props.minFilter !== undefined) {
     props.texture.minFilter = props.minFilter;
   }
@@ -156,11 +138,11 @@ function initializeTexture() {
   if (props.flipY !== undefined) {
     props.texture.flipY = props.flipY;
   }
-  
+
   if (props.format !== undefined) {
     props.texture.format = props.format;
   }
-  
+
   if (props.type !== undefined) {
     props.texture.type = props.type;
   }
@@ -174,11 +156,11 @@ function initializeTexture() {
   if (props.generateMipmaps !== undefined) {
     props.texture.generateMipmaps = props.generateMipmaps;
   }
-  
+
   if (props.premultiplyAlpha !== undefined) {
     props.texture.premultiplyAlpha = props.premultiplyAlpha;
   }
-  
+
   if (props.unpackAlignment !== undefined) {
     props.texture.unpackAlignment = props.unpackAlignment;
   }
@@ -193,23 +175,15 @@ function initializeTexture() {
     (props.texture as any).encoding = props.encoding;
   }
 
-  // 应用矩阵变换（不需要触发更新）
-  if (props.matrixAutoUpdate !== undefined) {
-    props.texture.matrixAutoUpdate = props.matrixAutoUpdate;
-  }
-
-  // 应用用户数据（不需要触发更新）
+  // 应用用户数据
   if (props.userData !== undefined) {
     props.texture.userData = props.userData;
   }
 
-  // 应用名称（不需要触发更新）
+  // 应用名称
   if (props.name !== undefined) {
     props.texture.name = props.name;
   }
-
-  // 触发初始更新
-  needsUpdate.value = true;
 }
 
 // 监听texture变化，当texture改变时重新初始化
@@ -440,7 +414,7 @@ watch(
     if (props.texture) {
       setTextureProperty(props.texture.matrixAutoUpdate, newMatrixAutoUpdate, (value) => {
         props.texture.matrixAutoUpdate = value;
-      }, false); // 矩阵自动更新不需要触发纹理更新
+      });
     }
   }
 );
@@ -452,7 +426,7 @@ watch(
     if (props.texture) {
       setTextureProperty(props.texture.userData, newUserData, (value) => {
         props.texture.userData = value;
-      }, false); // 用户数据变化不需要触发纹理更新
+      });
     }
   },
   { deep: true }
@@ -465,18 +439,7 @@ watch(
     if (props.texture) {
       setTextureProperty(props.texture.name, newName, (value) => {
         props.texture.name = value;
-      }, false); // 名称变化不需要触发纹理更新
-    }
-  }
-);
-
-// 监听needsUpdate变化，自动设置纹理的needsUpdate标志
-watch(
-  needsUpdate,
-  (shouldUpdate) => {
-    if (shouldUpdate && props.texture) {
-      props.texture.needsUpdate = true;
-      needsUpdate.value = false; // 重置标志
+      });
     }
   }
 );
