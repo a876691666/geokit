@@ -1,5 +1,10 @@
-import { Geodetic, PointOfView, radians, degrees, Ellipsoid } from "@takram/three-geospatial";
-import { Camera, Vector3, Ray } from "three";
+import { Camera, Vector3, Ray, MathUtils } from "three";
+import { Ellipsoid } from "./Ellipsoid";
+import { Geodetic } from "./Geodetic";
+import { PointOfView } from "./PointOfView";
+
+const radians = MathUtils.degToRad;
+const degrees = MathUtils.radToDeg;
 
 /**
  * 移动相机到指定位置
