@@ -259,6 +259,7 @@
       icon="https://img.icons8.com/?size=80&id=TQ3X81dkG8Q1&format=png"
       color="red"
       :size="8"
+      @pointClick="handlePointClick"
     />
 
     <!-- GeoPoint 点 -->
@@ -357,6 +358,15 @@ const infoPanelRef = ref<InstanceType<typeof GeoCSS2D>>();
 // 定时器
 let timeInterval: number;
 let progressInterval: number;
+
+// 点击事件处理
+const handlePointClick = (point: any, index: number) => {
+  console.log('点击了粒子点:', point);
+  console.log('点的索引:', index);
+  
+  // 可以在这里添加更多处理逻辑，比如显示弹窗、更新状态等
+  alert(`点击了第 ${index + 1} 个点\n经度: ${point.lon}\n纬度: ${point.lat}\n高度: ${point.height}m\n颜色: ${point.color || '默认'}`);
+};
 let statusInterval: number;
 let chartInterval: number;
 let animationInterval: number;

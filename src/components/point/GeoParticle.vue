@@ -8,22 +8,35 @@ import {
   PointsMaterial,
   Vector3,
   Color,
+  Raycaster,
+  Vector2,
 } from "three";
+import { useTresContext } from "@tresjs/core";
 import { lonlatToECEF } from "../../utils/controls";
 import { Point } from "@/config/type";
 
 const props = defineProps<{
   points: Point<{
     color?: string;
+
+    [key: string]: any;
   }>[];
   size?: number;
   icon?: string;
   color?: string;
 }>();
 
+const emit = defineEmits<{
+  pointClick: [point: Point<{ color?: string; [key: string]: any }>, index: number];
+}>();
+
+const { camera } = useTresContext();
+
 const points = shallowRef<Points<BufferGeometry, PointsMaterial>>();
 const positions = ref<Vector3[]>([]);
 const centerPoint = ref<Vector3>(new Vector3());
+const raycaster = new Raycaster();
+const mouse = new Vector2();
 
 const calculateCenterPoint = (positions: Vector3[]) => {
   if (positions.length === 0) return new Vector3();
@@ -110,9 +123,39 @@ watch(
   }
 );
 
+const handleClick = (event: MouseEvent) => {
+  if (!points.value) return;
+
+  // 计算鼠标位置
+  const rect = (event.target as HTMLElement).getBoundingClientRect();
+  mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+  // 设置射线
+  if (camera.value) {
+    raycaster.setFromCamera(mouse, camera.value);
+
+    // 检测与点的相交
+    const intersects = raycaster.intersectObject(points.value);
+
+    if (intersects.length > 0) {
+      const intersect = intersects[0];
+      const index = intersect.index;
+      
+      if (index !== undefined && index < props.points.length) {
+        const clickedPoint = props.points[index];
+        emit('pointClick', clickedPoint, index);
+      }
+    }
+  }
+};
+
 onMounted(() => {
   createParticle();
   updateGeometryPositions();
+  
+  // 添加点击事件监听器
+  document.addEventListener('click', handleClick);
 });
 
 onUnmounted(() => {
@@ -122,6 +165,9 @@ onUnmounted(() => {
     material.map?.dispose();
     material.dispose();
   }
+  
+  // 移除点击事件监听器
+  document.removeEventListener('click', handleClick);
 });
 </script>
 

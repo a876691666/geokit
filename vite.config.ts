@@ -13,6 +13,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
+      "@icegl/geokit": path.resolve(__dirname, "src/index.ts"),
     },
   },
 });
