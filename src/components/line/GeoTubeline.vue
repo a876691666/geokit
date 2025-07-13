@@ -74,6 +74,7 @@ const createTube = async () => {
 
   const materialOptions: any = {
     color: props.color || "#ffffff",
+    transparent: true,
   };
 
   // 加载纹理

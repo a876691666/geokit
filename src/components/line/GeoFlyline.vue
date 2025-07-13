@@ -23,7 +23,7 @@ const props = withDefaults(defineProps<GeoFlylineProps>(), {
   type: "mesh",
   color: "#ffffff",
   width: 1,
-  duration: 2000,
+  duration: 2,
   arcHeight: 0,
   segments: 20,
   renderOrder: 1,

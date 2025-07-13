@@ -70,7 +70,7 @@ export const updateTextureAnimation = (
   const deltaTime = elapsed - state.startTime;
   const progress = (deltaTime % duration) / duration;
 
-  texture.offset.x = progress;
+  texture.offset.x = -progress;
   texture.needsUpdate = true;
 };
 
@@ -91,6 +91,6 @@ export const updateMeshLineAnimation = (
   const progress = (deltaTime % duration) / duration;
 
   if (material.uniforms && material.uniforms.offset) {
-    material.uniforms.offset.value.x = progress;
+    material.uniforms.offset.value.x = -progress;
   }
 };
