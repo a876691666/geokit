@@ -12,10 +12,12 @@ const props = withDefaults(
         url: string
         draco?: boolean
         decoderPath?: string
+        renderOrder?: number
     }>(),
     {
         draco: false,
         decoderPath: './draco/',
+        renderOrder: 1,
     },
 )
 
@@ -29,5 +31,6 @@ onMounted(async () => {
 
     scene.value = gltfScene
     scene.value.userData.tiles = []
+    scene.value.renderOrder = props.renderOrder
 })
 </script>

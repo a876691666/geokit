@@ -15,9 +15,12 @@ interface GeoPointProps {
   color?: string;
   size?: number;
   icon?: string;
+  renderOrder?: number;
 }
 
-const props = defineProps<GeoPointProps>();
+const props = withDefaults(defineProps<GeoPointProps>(), {
+  renderOrder: 1,
+});
 const point = shallowRef<Points<BufferGeometry, PointsMaterial>>();
 
 const createPoint = () => {
@@ -38,6 +41,7 @@ const createPoint = () => {
   }
 
   point.value = new Points(geometry, material);
+  point.value.renderOrder = props.renderOrder;
 };
 
 watch(

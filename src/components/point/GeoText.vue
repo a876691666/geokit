@@ -14,13 +14,16 @@ textDiv.style.whiteSpace = 'nowrap'
 
 rootDiv.appendChild(textDiv)
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     point: Point
     text: string
     color?: string
     fontSize?: number
     align?: 'left' | 'right' | 'center'
-}>()
+    renderOrder?: number
+}>(), {
+    renderOrder: 1
+})
 
 const update = () => {
     textDiv.innerHTML = props.text
@@ -36,6 +39,7 @@ const update = () => {
 }
 
 const rootCSS2DObj = new CSS2DObject(rootDiv)
+rootCSS2DObj.renderOrder = props.renderOrder
 
 onMounted(() => {
     update()

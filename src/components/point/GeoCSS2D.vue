@@ -7,9 +7,12 @@ import { Point } from "@/config/type";
 
 const rootDiv = document.createElement("div");
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   point: Point;
-}>();
+  renderOrder?: number;
+}>(), {
+  renderOrder: 1,
+});
 
 const slots = defineSlots<{
   default(): any;
@@ -26,6 +29,7 @@ const group = new Group();
 group.layers.enableAll();
 group.add(rootCSS2DObj);
 rootCSS2DObj.layers.set(1);
+rootCSS2DObj.renderOrder = props.renderOrder;
 
 const updatePosition = () => {
   const ecef = lonlatToECEF(props.point.lon, props.point.lat, props.point.height);

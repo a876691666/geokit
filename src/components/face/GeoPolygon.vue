@@ -18,11 +18,13 @@ interface GeoPolygonProps {
   geometry: GeoJSONGeometry; // 只支持GeoJSON格式
   subdivisions?: number;
   height?: number;
+  renderOrder?: number;
 }
 
 const props = withDefaults(defineProps<GeoPolygonProps>(), {
   subdivisions: 2,
   height: 30,
+  renderOrder: 1,
 });
 
 const mesh = shallowRef<Mesh<BufferGeometry>>();
@@ -199,7 +201,7 @@ const createPolygon = () => {
 
     // 创建网格（不创建材质，通过slot传入）
     mesh.value = new Mesh(geometry);
-    mesh.value.renderOrder = 1;
+    mesh.value.renderOrder = props.renderOrder;
   } catch (error) {
     console.error("创建多边形失败:", error);
   }

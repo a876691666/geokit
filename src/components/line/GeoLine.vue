@@ -22,9 +22,12 @@ interface GeoLineProps {
   color?: string;
   width?: number;
   texture?: string;
+  renderOrder?: number;
 }
 
-const props = defineProps<GeoLineProps>();
+const props = withDefaults(defineProps<GeoLineProps>(), {
+  renderOrder: 1,
+});
 const group = shallowRef<Group>();
 const line = shallowRef<Line<BufferGeometry, LineBasicMaterial>>();
 const positions = ref<Vector3[]>([]);
@@ -64,6 +67,7 @@ const createLine = async () => {
   const material = new LineBasicMaterial(materialOptions);
 
   line.value = new Line(geometry, material);
+  line.value.renderOrder = props.renderOrder;
   group.value.add(line.value);
   group.value.position.copy(centerPoint.value);
 };

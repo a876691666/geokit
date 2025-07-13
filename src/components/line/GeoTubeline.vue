@@ -30,9 +30,12 @@ interface GeoTubelineProps {
   tubularSegments?: number;
   texture?: string;
   duration?: number;
+  renderOrder?: number;
 }
 
-const props = defineProps<GeoTubelineProps>();
+const props = withDefaults(defineProps<GeoTubelineProps>(), {
+  renderOrder: 1,
+});
 const group = shallowRef<Group>();
 const tube = shallowRef<Mesh<TubeGeometry, MeshBasicMaterial>>();
 const positions = ref<Vector3[]>([]);
@@ -87,6 +90,7 @@ const createTube = async () => {
   const material = new MeshBasicMaterial(materialOptions);
 
   tube.value = new Mesh(geometry, material);
+  tube.value.renderOrder = props.renderOrder;
   group.value.add(tube.value);
   group.value.position.copy(centerPoint.value);
 

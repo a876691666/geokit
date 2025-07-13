@@ -21,6 +21,7 @@ interface GeoBuildingProps {
   showTop?: boolean; // 是否显示顶面
   showBottom?: boolean; // 是否显示底面
   showWalls?: boolean; // 是否显示墙体
+  renderOrder?: number;
 }
 
 const props = withDefaults(defineProps<GeoBuildingProps>(), {
@@ -30,6 +31,7 @@ const props = withDefaults(defineProps<GeoBuildingProps>(), {
   showTop: true,
   showBottom: false,
   showWalls: true,
+  renderOrder: 1,
 });
 
 const topMesh = shallowRef<Mesh<BufferGeometry, MeshPhongMaterial>>();
@@ -297,18 +299,21 @@ const createBuilding = () => {
     if (props.showBottom) {
       const bottomGeometry = createPolygonGeometry(0, geometryCenter);
       bottomMesh.value = new Mesh(bottomGeometry);
+      bottomMesh.value.renderOrder = props.renderOrder;
     }
 
     // 创建顶面
     if (props.showTop) {
       const topGeometry = createPolygonGeometry(props.height, geometryCenter);
       topMesh.value = new Mesh(topGeometry);
+      topMesh.value.renderOrder = props.renderOrder;
     }
 
     // 创建墙体
     if (props.showWalls) {
       const wallGeometry = createWallGeometry(geometryCenter);
       wallMesh.value = new Mesh(wallGeometry);
+      wallMesh.value.renderOrder = props.renderOrder;
     }
   } catch (error) {
     console.error("创建建筑失败:", error);

@@ -6,11 +6,14 @@ import { Point } from "@/config/type";
 
 const rootDiv = document.createElement("img");
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   point: Point;
   size?: number;
   icon: string;
-}>();
+  renderOrder?: number;
+}>(), {
+  renderOrder: 1,
+});
 
 const update = () => {
   rootDiv.src = props.icon;
@@ -19,6 +22,7 @@ const update = () => {
 };
 
 const rootCSS2DObj = new CSS2DObject(rootDiv);
+rootCSS2DObj.renderOrder = props.renderOrder;
 
 onMounted(() => {
   update();

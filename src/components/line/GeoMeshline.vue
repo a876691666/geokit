@@ -25,9 +25,12 @@ interface GeoMeshlineProps {
   dashOffset?: number;
   texture?: string;
   duration?: number;
+  renderOrder?: number;
 }
 
-const props = defineProps<GeoMeshlineProps>();
+const props = withDefaults(defineProps<GeoMeshlineProps>(), {
+  renderOrder: 1,
+});
 const group = shallowRef<Group>();
 const meshLine = shallowRef<any>();
 const lineMesh = shallowRef<Mesh>();
@@ -110,6 +113,7 @@ const createMeshline = async () => {
 
   // 创建网格
   lineMesh.value = new Mesh(meshLine.value.geometry, material);
+  lineMesh.value.renderOrder = props.renderOrder;
   group.value.add(lineMesh.value);
   group.value.position.copy(centerPoint.value);
 

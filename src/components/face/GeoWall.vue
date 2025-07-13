@@ -14,11 +14,13 @@ interface GeoWallProps {
   geometry: GeoJSONGeometry; // 支持所有 GeoJSON 几何类型
   height?: number; // 墙体高度
   baseHeight?: number; // 底部高度
+  renderOrder?: number;
 }
 
 const props = withDefaults(defineProps<GeoWallProps>(), {
   height: 100, // 默认墙体高度
   baseHeight: 0, // 默认底部高度
+  renderOrder: 1,
 });
 
 const mesh = shallowRef<Mesh<BufferGeometry>>();
@@ -196,7 +198,7 @@ const createWall = () => {
 
     // 创建网格（不创建材质，通过slot传入）
     mesh.value = new Mesh(geometry);
-    mesh.value.renderOrder = 1;
+    mesh.value.renderOrder = props.renderOrder;
   } catch (error) {
     console.error("创建墙体失败:", error);
   }

@@ -16,6 +16,7 @@ interface GeoFlylineProps {
   segments?: number; // 弧线分段数，默认20
   // Tube专属属性
   tubularSegments?: number;
+  renderOrder?: number;
 }
 
 const props = withDefaults(defineProps<GeoFlylineProps>(), {
@@ -25,6 +26,7 @@ const props = withDefaults(defineProps<GeoFlylineProps>(), {
   duration: 2000,
   arcHeight: 0,
   segments: 20,
+  renderOrder: 1,
 });
 
 const calculatedPoints = ref<Point[]>([]);
@@ -92,6 +94,7 @@ onMounted(() => {
     :texture="props.texture"
     :duration="props.duration"
     :tubularSegments="props.tubularSegments"
+    :renderOrder="props.renderOrder"
   />
   <GeoMeshline
     v-else
@@ -100,5 +103,6 @@ onMounted(() => {
     :width="props.width"
     :texture="props.texture"
     :duration="props.duration"
+    :renderOrder="props.renderOrder"
   />
 </template>

@@ -15,7 +15,7 @@ import { useTresContext } from "@tresjs/core";
 import { lonlatToECEF } from "../../utils/controls";
 import { Point } from "@/config/type";
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   points: Point<{
     color?: string;
 
@@ -24,7 +24,10 @@ const props = defineProps<{
   size?: number;
   icon?: string;
   color?: string;
-}>();
+  renderOrder?: number;
+}>(), {
+  renderOrder: 1,
+});
 
 const emit = defineEmits<{
   pointClick: [point: Point<{ color?: string; [key: string]: any }>, index: number];
@@ -73,6 +76,7 @@ const createParticle = () => {
   geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
 
   points.value = new Points(geometry, material);
+  points.value.renderOrder = props.renderOrder;
 };
 
 const updateGeometryPositions = () => {
