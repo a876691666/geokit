@@ -224,7 +224,7 @@ import {
 } from "..";
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { GeoPositionConfig } from "../config/type";
-import { DoubleSide, RepeatWrapping } from "three";
+import { DoubleSide } from "three";
 import { UseTexture } from "@tresjs/core";
 
 // 相机位置

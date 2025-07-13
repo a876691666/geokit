@@ -4,6 +4,7 @@ export * from "./components/face";
 export * from "./components/body";
 export * from "./components/common";
 export * from "./components/tiles";
+export * from "./components/model";
 export * from "./config/type";
 
 export { default as GeoCanvas } from "./components/GeoCanvas.vue";

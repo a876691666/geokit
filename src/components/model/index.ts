@@ -1,0 +1,1 @@
+export { default as GeoGLTF } from "./GeoGLTF.vue";

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import MainIndex from "./pages/geoFaceCase.vue";
+import MainIndex from "./pages/case-icon.vue";
 </script>
 
 <template>
