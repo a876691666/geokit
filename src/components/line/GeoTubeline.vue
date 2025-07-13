@@ -9,6 +9,7 @@ import {
   LineCurve3,
   CurvePath,
   Texture,
+  DoubleSide,
 } from "three";
 import { useRenderLoop } from "@tresjs/core";
 import {
@@ -75,6 +76,7 @@ const createTube = async () => {
   const materialOptions: any = {
     color: props.color || "#ffffff",
     transparent: true,
+    side: DoubleSide,
   };
 
   // 加载纹理
