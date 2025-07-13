@@ -24,7 +24,7 @@ const scene = shallowRef<THREE.Object3D>()
 onMounted(async () => {
     const { scene: gltfScene } = await useGLTF(props.url, {
         draco: props.draco,
-        decoderPath: props.decoderPath,
+        decoderPath: props.draco ? props.decoderPath : undefined,
     })
 
     scene.value = gltfScene
