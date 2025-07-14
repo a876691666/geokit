@@ -3,8 +3,9 @@ import { ref, watch, onMounted } from "vue";
 import GeoTubeline from "./GeoTubeline.vue";
 import GeoMeshline from "./GeoMeshline.vue";
 import { Point } from "@/config/type";
+import { GeoEventEmits, GeoInteractiveProps } from "../common/event";
 
-interface GeoFlylineProps {
+interface GeoFlylineProps extends GeoInteractiveProps {
   start: Point; // 起始点
   end: Point; // 结束点
   type?: "mesh" | "tube";
@@ -27,7 +28,11 @@ const props = withDefaults(defineProps<GeoFlylineProps>(), {
   arcHeight: 0,
   segments: 20,
   renderOrder: 1,
+  raycastMultiplier: 1,
+  raycastActive: true,
 });
+
+const emit = defineEmits<GeoEventEmits>();
 
 const calculatedPoints = ref<Point[]>([]);
 
@@ -95,6 +100,18 @@ onMounted(() => {
     :duration="props.duration"
     :tubularSegments="props.tubularSegments"
     :renderOrder="props.renderOrder"
+    :id="props.id"
+    :raycastActive="props.raycastActive"
+    :raycastMultiplier="props.raycastMultiplier"
+    @click="(...args) => emit('click', ...args)"
+    @double-click="(...args) => emit('double-click', ...args)"
+    @context-menu="(...args) => emit('context-menu', ...args)"
+    @pointer-enter="(...args) => emit('pointer-enter', ...args)"
+    @pointer-leave="(...args) => emit('pointer-leave', ...args)"
+    @pointer-over="(...args) => emit('pointer-over', ...args)"
+    @pointer-down="(...args) => emit('pointer-down', ...args)"
+    @pointer-up="(...args) => emit('pointer-up', ...args)"
+    @wheel="(...args) => emit('wheel', ...args)"
   />
   <GeoMeshline
     v-else
@@ -104,5 +121,17 @@ onMounted(() => {
     :texture="props.texture"
     :duration="props.duration"
     :renderOrder="props.renderOrder"
+    :id="props.id"
+    :raycastActive="props.raycastActive"
+    :raycastMultiplier="props.raycastMultiplier"
+    @click="(...args) => emit('click', ...args)"
+    @double-click="(...args) => emit('double-click', ...args)"
+    @context-menu="(...args) => emit('context-menu', ...args)"
+    @pointer-enter="(...args) => emit('pointer-enter', ...args)"
+    @pointer-leave="(...args) => emit('pointer-leave', ...args)"
+    @pointer-over="(...args) => emit('pointer-over', ...args)"
+    @pointer-down="(...args) => emit('pointer-down', ...args)"
+    @pointer-up="(...args) => emit('pointer-up', ...args)"
+    @wheel="(...args) => emit('wheel', ...args)"
   />
 </template>

@@ -19,6 +19,7 @@
       :show-top="true"
       :show-walls="true"
       :subdivisions="1"
+      @click="handleClick"
     >
       <template #top>
         <TresMeshStandardMaterial color="#fff" :side="DoubleSide" />
@@ -115,6 +116,10 @@ const buildingGeometry2 = ref({
     ],
   ],
 });
+
+const handleClick = (a: any, b: any, c: any) => {
+  console.log(a, b, c);
+};
 </script>
 
 <style scoped></style>

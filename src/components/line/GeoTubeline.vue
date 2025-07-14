@@ -23,8 +23,9 @@ import {
   updateTextureAnimation,
 } from "./utils";
 import { Point } from "@/config/type";
+import { GeoEventEmits, GeoInteractiveProps, createEventHandler, hijackRaycast } from "../common/event";
 
-interface GeoTubelineProps {
+interface GeoTubelineProps extends GeoInteractiveProps {
   points: Point[];
   color?: string;
   width?: number;
@@ -36,13 +37,20 @@ interface GeoTubelineProps {
 
 const props = withDefaults(defineProps<GeoTubelineProps>(), {
   renderOrder: 1,
+  raycastMultiplier: 1,
+  raycastActive: true,
 });
+
+const emit = defineEmits<GeoEventEmits>();
 const group = shallowRef<Group>();
 const tube = shallowRef<Mesh<TubeGeometry, MeshBasicMaterial>>();
 const positions = ref<Vector3[]>([]);
 const centerPoint = ref<Vector3>(new Vector3());
 const textureRef = shallowRef<Texture>();
 const animationState = ref<AnimationState>({ startTime: 0, isAnimating: false });
+
+// 创建事件处理器
+const eventHandlers = createEventHandler(emit, props, props.raycastActive, tube);
 
 const { onLoop } = useRenderLoop();
 
@@ -94,6 +102,12 @@ const createTube = async () => {
 
   tube.value = new Mesh(geometry, material);
   tube.value.renderOrder = props.renderOrder;
+  
+  // 添加交互事件支持
+  if (props.raycastActive) {
+    hijackRaycast(tube.value, props.raycastMultiplier);
+  }
+  
   group.value.add(tube.value);
   group.value.position.copy(centerPoint.value);
 
@@ -216,5 +230,17 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <primitive :object="group" v-if="group"></primitive>
+  <primitive 
+    :object="group" 
+    v-if="group"
+    @click="eventHandlers.handleClick"
+    @double-click="eventHandlers.handleDoubleClick"
+    @context-menu="eventHandlers.handleContextMenu"
+    @pointer-enter="eventHandlers.handlePointerEnter"
+    @pointer-leave="eventHandlers.handlePointerLeave"
+    @pointer-over="eventHandlers.handlePointerOver"
+    @pointer-down="eventHandlers.handlePointerDown"
+    @pointer-up="eventHandlers.handlePointerUp"
+    @wheel="eventHandlers.handleWheel"
+  ></primitive>
 </template>

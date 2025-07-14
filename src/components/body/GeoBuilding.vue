@@ -12,8 +12,14 @@ import {
   triangulateWithDelaunator,
   generateInteriorPoints,
 } from "../../utils/geometry";
+import {
+  GeoEventEmits,
+  GeoInteractiveProps,
+  createEventHandler,
+  hijackRaycast,
+} from "../common/event";
 
-interface GeoBuildingProps {
+interface GeoBuildingProps extends GeoInteractiveProps {
   geometry: GeoJSONGeometry; // 只支持 Polygon 和 MultiPolygon
   subdivisions?: number;
   height?: number; // 楼体高度
@@ -32,12 +38,19 @@ const props = withDefaults(defineProps<GeoBuildingProps>(), {
   showBottom: false,
   showWalls: true,
   renderOrder: 1,
+  raycastMultiplier: 1,
+  raycastActive: true,
 });
+
+const emit = defineEmits<GeoEventEmits>();
 
 const topMesh = shallowRef<Mesh<BufferGeometry, MeshPhongMaterial>>();
 const bottomMesh = shallowRef<Mesh<BufferGeometry, MeshPhongMaterial>>();
 const wallMesh = shallowRef<Mesh<BufferGeometry, MeshPhongMaterial>>();
 const centerPoint = ref<Vector3>(new Vector3());
+
+// 创建事件处理器
+const eventHandlers = createEventHandler(emit, props, props.raycastActive, undefined);
 
 /**
  * 将GeoJSON坐标转换为Point格式（本地版本，使用props.baseHeight）
@@ -300,6 +313,11 @@ const createBuilding = () => {
       const bottomGeometry = createPolygonGeometry(0, geometryCenter);
       bottomMesh.value = new Mesh(bottomGeometry);
       bottomMesh.value.renderOrder = props.renderOrder;
+
+      // 添加交互事件支持
+      if (props.raycastActive) {
+        hijackRaycast(bottomMesh.value, props.raycastMultiplier);
+      }
     }
 
     // 创建顶面
@@ -307,6 +325,11 @@ const createBuilding = () => {
       const topGeometry = createPolygonGeometry(props.height, geometryCenter);
       topMesh.value = new Mesh(topGeometry);
       topMesh.value.renderOrder = props.renderOrder;
+
+      // 添加交互事件支持
+      if (props.raycastActive) {
+        hijackRaycast(topMesh.value, props.raycastMultiplier);
+      }
     }
 
     // 创建墙体
@@ -314,6 +337,11 @@ const createBuilding = () => {
       const wallGeometry = createWallGeometry(geometryCenter);
       wallMesh.value = new Mesh(wallGeometry);
       wallMesh.value.renderOrder = props.renderOrder;
+
+      // 添加交互事件支持
+      if (props.raycastActive) {
+        hijackRaycast(wallMesh.value, props.raycastMultiplier);
+      }
     }
   } catch (error) {
     console.error("创建建筑失败:", error);
@@ -403,7 +431,19 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <TresGroup v-if="bottomMesh || topMesh || wallMesh" :position="centerPoint">
+  <TresGroup
+    v-if="bottomMesh || topMesh || wallMesh"
+    :position="centerPoint"
+    @click="eventHandlers.handleClick"
+    @double-click="eventHandlers.handleDoubleClick"
+    @context-menu="eventHandlers.handleContextMenu"
+    @pointer-enter="eventHandlers.handlePointerEnter"
+    @pointer-leave="eventHandlers.handlePointerLeave"
+    @pointer-over="eventHandlers.handlePointerOver"
+    @pointer-down="eventHandlers.handlePointerDown"
+    @pointer-up="eventHandlers.handlePointerUp"
+    @wheel="eventHandlers.handleWheel"
+  >
     <primitive v-if="showBottom" :object="bottomMesh">
       <slot name="bottom" />
     </primitive>

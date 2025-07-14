@@ -16,8 +16,9 @@ import {
   loadTexture,
 } from "./utils";
 import { Point } from "@/config/type";
+import { GeoEventEmits, GeoInteractiveProps, createEventHandler, hijackRaycast } from "../common/event";
 
-interface GeoLineProps {
+interface GeoLineProps extends GeoInteractiveProps {
   points: Point[];
   color?: string;
   width?: number;
@@ -27,12 +28,20 @@ interface GeoLineProps {
 
 const props = withDefaults(defineProps<GeoLineProps>(), {
   renderOrder: 1,
+  raycastMultiplier: 1,
+  raycastActive: true,
 });
+
+const emit = defineEmits<GeoEventEmits>();
+
 const group = shallowRef<Group>();
 const line = shallowRef<Line<BufferGeometry, LineBasicMaterial>>();
 const positions = ref<Vector3[]>([]);
 const centerPoint = ref<Vector3>(new Vector3());
 const textureRef = shallowRef<Texture>();
+
+// 创建事件处理器
+const eventHandlers = createEventHandler(emit, props, props.raycastActive, line);
 
 const createLine = async () => {
   // 创建组
@@ -68,6 +77,12 @@ const createLine = async () => {
 
   line.value = new Line(geometry, material);
   line.value.renderOrder = props.renderOrder;
+  
+  // 添加交互事件支持
+  if (props.raycastActive) {
+    hijackRaycast(line.value, props.raycastMultiplier);
+  }
+  
   group.value.add(line.value);
   group.value.position.copy(centerPoint.value);
 };
@@ -166,5 +181,17 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <primitive :object="group" v-if="group"></primitive>
+  <primitive 
+    :object="group" 
+    v-if="group"
+    @click="eventHandlers.handleClick"
+    @double-click="eventHandlers.handleDoubleClick"
+    @context-menu="eventHandlers.handleContextMenu"
+    @pointer-enter="eventHandlers.handlePointerEnter"
+    @pointer-leave="eventHandlers.handlePointerLeave"
+    @pointer-over="eventHandlers.handlePointerOver"
+    @pointer-down="eventHandlers.handlePointerDown"
+    @pointer-up="eventHandlers.handlePointerUp"
+    @wheel="eventHandlers.handleWheel"
+  ></primitive>
 </template>

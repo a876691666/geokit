@@ -9,8 +9,9 @@ import {
 
 import { lonlatToECEF } from "../../utils/controls";
 import { Point, GeoJSONGeometry } from "@/config/type";
+import { GeoEventEmits, GeoInteractiveProps, createEventHandler, hijackRaycast } from "../common/event";
 
-interface GeoWallProps {
+interface GeoWallProps extends GeoInteractiveProps {
   geometry: GeoJSONGeometry; // 支持所有 GeoJSON 几何类型
   height?: number; // 墙体高度
   baseHeight?: number; // 底部高度
@@ -21,10 +22,17 @@ const props = withDefaults(defineProps<GeoWallProps>(), {
   height: 100, // 默认墙体高度
   baseHeight: 0, // 默认底部高度
   renderOrder: 1,
+  raycastMultiplier: 1,
+  raycastActive: true,
 });
+
+const emit = defineEmits<GeoEventEmits>();
 
 const mesh = shallowRef<Mesh<BufferGeometry>>();
 const centerPoint = ref<Vector3>(new Vector3());
+
+// 创建事件处理器
+const eventHandlers = createEventHandler(emit, props, props.raycastActive, mesh);
 
 /**
  * 将 GeoJSON 坐标转换为 Point 格式
@@ -199,6 +207,11 @@ const createWall = () => {
     // 创建网格（不创建材质，通过slot传入）
     mesh.value = new Mesh(geometry);
     mesh.value.renderOrder = props.renderOrder;
+    
+    // 添加交互事件支持
+    if (props.raycastActive) {
+      hijackRaycast(mesh.value, props.raycastMultiplier);
+    }
   } catch (error) {
     console.error("创建墙体失败:", error);
   }
@@ -296,7 +309,18 @@ onUnmounted(() => {
 
 <template>
   <TresGroup v-if="mesh" :position="centerPoint">
-    <primitive :object="mesh">
+    <primitive 
+      :object="mesh"
+      @click="eventHandlers.handleClick"
+      @double-click="eventHandlers.handleDoubleClick"
+      @context-menu="eventHandlers.handleContextMenu"
+      @pointer-enter="eventHandlers.handlePointerEnter"
+      @pointer-leave="eventHandlers.handlePointerLeave"
+      @pointer-over="eventHandlers.handlePointerOver"
+      @pointer-down="eventHandlers.handlePointerDown"
+      @pointer-up="eventHandlers.handlePointerUp"
+      @wheel="eventHandlers.handleWheel"
+    >
       <slot />
     </primitive>
   </TresGroup>

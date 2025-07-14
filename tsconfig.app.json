@@ -5,7 +5,8 @@
     /* Path mapping */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@icegl/geokit": ["src/index.ts"]
     },
     /* Linting */
     "strict": true,

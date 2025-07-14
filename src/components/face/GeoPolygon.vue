@@ -13,8 +13,9 @@ import {
   triangulateWithDelaunator,
   generateInteriorPoints,
 } from "../../utils/geometry";
+import { GeoEventEmits, GeoInteractiveProps, createEventHandler, hijackRaycast } from "../common/event";
 
-interface GeoPolygonProps {
+interface GeoPolygonProps extends GeoInteractiveProps {
   geometry: GeoJSONGeometry; // 只支持GeoJSON格式
   subdivisions?: number;
   height?: number;
@@ -25,10 +26,17 @@ const props = withDefaults(defineProps<GeoPolygonProps>(), {
   subdivisions: 2,
   height: 30,
   renderOrder: 1,
+  raycastMultiplier: 1,
+  raycastActive: true,
 });
+
+const emit = defineEmits<GeoEventEmits>();
 
 const mesh = shallowRef<Mesh<BufferGeometry>>();
 const centerPoint = ref<Vector3>(new Vector3());
+
+// 创建事件处理器
+const eventHandlers = createEventHandler(emit, props, props.raycastActive, mesh);
 
 /**
  * 将GeoJSON坐标转换为Point格式（本地版本，使用props.height）
@@ -202,6 +210,11 @@ const createPolygon = () => {
     // 创建网格（不创建材质，通过slot传入）
     mesh.value = new Mesh(geometry);
     mesh.value.renderOrder = props.renderOrder;
+    
+    // 添加交互事件支持
+    if (props.raycastActive) {
+      hijackRaycast(mesh.value, props.raycastMultiplier);
+    }
   } catch (error) {
     console.error("创建多边形失败:", error);
   }
@@ -297,7 +310,18 @@ onUnmounted(() => {
 
 <template>
   <TresGroup v-if="mesh" :position="centerPoint">
-    <primitive :object="mesh">
+    <primitive 
+      :object="mesh"
+      @click="eventHandlers.handleClick"
+      @double-click="eventHandlers.handleDoubleClick"
+      @context-menu="eventHandlers.handleContextMenu"
+      @pointer-enter="eventHandlers.handlePointerEnter"
+      @pointer-leave="eventHandlers.handlePointerLeave"
+      @pointer-over="eventHandlers.handlePointerOver"
+      @pointer-down="eventHandlers.handlePointerDown"
+      @pointer-up="eventHandlers.handlePointerUp"
+      @wheel="eventHandlers.handleWheel"
+    >
       <slot />
     </primitive>
   </TresGroup>

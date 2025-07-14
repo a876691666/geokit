@@ -8,38 +8,74 @@ import {
   PointsMaterial,
   Vector3,
   Color,
-  Raycaster,
-  Vector2,
 } from "three";
-import { useTresContext } from "@tresjs/core";
 import { lonlatToECEF } from "../../utils/controls";
 import { Point } from "@/config/type";
+import { GeoMouseEvent } from "../common/event";
 
-const props = withDefaults(defineProps<{
-  points: Point<{
+const props = withDefaults(
+  defineProps<{
+    points: Point<{
+      color?: string;
+
+      [key: string]: any;
+    }>[];
+    size?: number;
+    icon?: string;
     color?: string;
+    renderOrder?: number;
+    raycastActive?: boolean;
+    raycastMultiplier?: number;
+    sizeAttenuation?: boolean;
+  }>(),
+  {
+    renderOrder: 1,
+    raycastMultiplier: 1,
+    sizeAttenuation: true,
+  }
+);
 
-    [key: string]: any;
-  }>[];
-  size?: number;
-  icon?: string;
-  color?: string;
-  renderOrder?: number;
-}>(), {
-  renderOrder: 1,
-});
+type GeoParticleEvent = GeoMouseEvent<Point<{ color?: string; [key: string]: any }>>;
 
 const emit = defineEmits<{
-  pointClick: [point: Point<{ color?: string; [key: string]: any }>, index: number];
+  click: GeoParticleEvent;
+  "double-click": GeoParticleEvent;
+  "context-menu": GeoParticleEvent;
+  "pointer-enter": GeoParticleEvent;
+  "pointer-leave": GeoParticleEvent;
+  "pointer-over": GeoParticleEvent;
+  "pointer-down": GeoParticleEvent;
+  "pointer-up": GeoParticleEvent;
+  wheel: GeoParticleEvent;
 }>();
-
-const { camera } = useTresContext();
 
 const points = shallowRef<Points<BufferGeometry, PointsMaterial>>();
 const positions = ref<Vector3[]>([]);
 const centerPoint = ref<Vector3>(new Vector3());
-const raycaster = new Raycaster();
-const mouse = new Vector2();
+
+// 劫持 raycast 方法的公共函数
+const hijackRaycast = (pointObject: Points<BufferGeometry, PointsMaterial>) => {
+  const originalRaycast = pointObject.raycast;
+  pointObject.raycast = function (raycaster, intersects) {
+    // 保存原始的阈值
+    const originalThreshold = raycaster.params.Points?.threshold || 1;
+
+    // 应用 raycast 乘数
+    if (raycaster.params.Points) {
+      raycaster.params.Points.threshold = originalThreshold * props.raycastMultiplier;
+    } else {
+      raycaster.params.Points = { threshold: originalThreshold * props.raycastMultiplier };
+    }
+
+    // 调用原始 raycast 方法
+    const result = originalRaycast.call(this, raycaster, intersects);
+
+    // 恢复原始阈值
+    raycaster.params.Points.threshold = originalThreshold;
+
+    return result;
+  };
+};
 
 const calculateCenterPoint = (positions: Vector3[]) => {
   if (positions.length === 0) return new Vector3();
@@ -58,7 +94,7 @@ const createParticle = () => {
   const material = new PointsMaterial({
     size: props.size || 32,
     transparent: true,
-    sizeAttenuation: true,
+    sizeAttenuation: props.sizeAttenuation,
     vertexColors: true,
   });
 
@@ -77,6 +113,9 @@ const createParticle = () => {
 
   points.value = new Points(geometry, material);
   points.value.renderOrder = props.renderOrder;
+  
+  // 劫持 raycast 方法
+  hijackRaycast(points.value);
 };
 
 const updateGeometryPositions = () => {
@@ -127,39 +166,38 @@ watch(
   }
 );
 
-const handleClick = (event: MouseEvent) => {
-  if (!points.value) return;
-
-  // 计算鼠标位置
-  const rect = (event.target as HTMLElement).getBoundingClientRect();
-  mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-  mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-  // 设置射线
-  if (camera.value) {
-    raycaster.setFromCamera(mouse, camera.value);
-
-    // 检测与点的相交
-    const intersects = raycaster.intersectObject(points.value);
-
-    if (intersects.length > 0) {
-      const intersect = intersects[0];
-      const index = intersect.index;
-      
-      if (index !== undefined && index < props.points.length) {
-        const clickedPoint = props.points[index];
-        emit('pointClick', clickedPoint, index);
-      }
+watch(
+  () => props.raycastMultiplier,
+  (newMultiplier) => {
+    if (points.value) {
+      // 重新劫持 raycast 方法以使用新的乘数
+      hijackRaycast(points.value);
     }
   }
+);
+
+const handleEvent = (eventName: string) => (event: MouseEvent & { index: number }) => {
+  if (!points.value || !props.raycastActive) return;
+
+  if (event.index !== undefined && event.index < props.points.length) {
+    const clickedPoint = props.points[event.index];
+    emit(eventName as any, event, clickedPoint, event.index);
+  }
 };
+
+const handleClick = handleEvent("click");
+const handleDoubleClick = handleEvent("double-click");
+const handleContextMenu = handleEvent("context-menu");
+const handlePointerEnter = handleEvent("pointer-enter");
+const handlePointerLeave = handleEvent("pointer-leave");
+const handlePointerOver = handleEvent("pointer-over");
+const handlePointerDown = handleEvent("pointer-down");
+const handlePointerUp = handleEvent("pointer-up");
+const handleWheel = handleEvent("wheel");
 
 onMounted(() => {
   createParticle();
   updateGeometryPositions();
-  
-  // 添加点击事件监听器
-  document.addEventListener('click', handleClick);
 });
 
 onUnmounted(() => {
@@ -169,12 +207,21 @@ onUnmounted(() => {
     material.map?.dispose();
     material.dispose();
   }
-  
-  // 移除点击事件监听器
-  document.removeEventListener('click', handleClick);
 });
 </script>
 
 <template>
-  <primitive :object="points" v-if="points"></primitive>
+  <primitive
+    :object="points"
+    v-if="points"
+    @click="handleClick"
+    @double-click="handleDoubleClick"
+    @context-menu="handleContextMenu"
+    @pointer-enter="handlePointerEnter"
+    @pointer-leave="handlePointerLeave"
+    @pointer-over="handlePointerOver"
+    @pointer-down="handlePointerDown"
+    @pointer-up="handlePointerUp"
+    @wheel="handleWheel"
+  ></primitive>
 </template>

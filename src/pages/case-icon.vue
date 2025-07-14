@@ -5,16 +5,16 @@
         <XYZTiles url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
         <!-- GeoText 文字 -->
-        <GeoText text="Hello World" color="red" align="right" :point="{ lon: 118.77, lat: 32.04, height: 60 }" :height="60" :fontSize="14" />
+        <GeoText @click="handlePointClick" text="Hello World" color="red" align="right" :point="{ lon: 118.77, lat: 32.04, height: 60 }" :height="60" :fontSize="14" />
 
         <!-- GeoIcon 图标 -->
-        <GeoIcon icon="https://img.icons8.com/?size=80&id=TQ3X81dkG8Q1&format=png" :point="{ lon: 118.77, lat: 32.04, height: 40 }" :height="40" :size="14" />
+        <GeoIcon icon="https://img.icons8.com/?size=80&id=TQ3X81dkG8Q1&format=png" :point="{ lon: 118.77, lat: 32.042, height: 1 }" :height="40" :size="14" />
 
         <!-- GeoParticle 粒子 -->
-        <GeoParticle @pointClick="handlePointClick" :points="points" icon="https://img.icons8.com/?size=80&id=TQ3X81dkG8Q1&format=png" color="red" :size="8" />
+        <GeoParticle @click="handlePointClick" :size-attenuation="false" raycastActive :points="points" icon="https://img.icons8.com/?size=80&id=TQ3X81dkG8Q1&format=png" color="red" :size="6" />
 
         <!-- GeoPoint 点 -->
-        <GeoPoint icon="https://img.icons8.com/?size=80&id=TQ3X81dkG8Q1&format=png" :point="{ lon: 118.77, lat: 32.04, height: 20 }" :height="20" :size="60" />
+        <GeoPoint @click="handlePointClick" raycastActive icon="https://img.icons8.com/?size=80&id=TQ3X81dkG8Q1&format=png" :point="{ lon: 118.77, lat: 32.04, height: 80 }" :size="20" />
     </GeoCanvas>
 </template>
 
@@ -174,8 +174,8 @@ const stopAnimation = () => {
     }
 }
 
-const handlePointClick = (point: Point) => {
-    console.log(point)
+const handlePointClick = (event: any, point: any, index: number) => {
+    console.log(point, index)
 }
 
 onMounted(() => {
