@@ -10,3 +10,4 @@ export * from "./config/type";
 export { default as GeoCanvas } from "./components/GeoCanvas.vue";
 export { default as GeoControls } from "./components/GeoControls.vue";
 export { default as GeoScene } from "./components/GeoScene.vue";
+export { default as GeoCSS2DRenderer } from "./components/GeoCSS2DRenderer.vue";
