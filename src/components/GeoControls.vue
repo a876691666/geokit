@@ -1,15 +1,46 @@
 <template></template>
 <script setup lang="ts">
 import { moveTo, getCameraLonLat } from "../utils/controls";
-import { watch, type WatchHandle, type WatchCallback, type WatchOptions } from "vue";
+import {
+  watch,
+  type WatchHandle,
+  type WatchCallback,
+  type WatchOptions,
+  onMounted,
+  onUnmounted,
+} from "vue";
 import { useTresContext, useLoop } from "@tresjs/core";
 import { GeoPositionConfig } from "../config/type";
+import { GlobeControls } from "3d-tiles-renderer";
 
-const { camera } = useTresContext();
+const { scene, camera, renderer } = useTresContext();
 
 const positionModel = defineModel<GeoPositionConfig>("position", { required: true });
 
+const props = withDefaults(
+  defineProps<{
+    enableDamping?: boolean;
+    adjustHeight?: boolean;
+    minDistance?: number;
+  }>(),
+  {
+    enableDamping: true,
+    adjustHeight: false,
+    minDistance: 150,
+  }
+);
+
 const { onAfterRender } = useLoop();
+
+let controls: GlobeControls | null = null;
+onMounted(() => {
+  controls = new GlobeControls(scene.value, camera.value, renderer.value.domElement);
+  // @ts-ignore
+  controls.setTilesRenderer({ group: scene.value });
+  controls.enableDamping = props.enableDamping;
+  controls.adjustHeight = props.adjustHeight;
+  controls.minDistance = props.minDistance;
+});
 
 const updatePosition = () => {
   if (camera.value) {
@@ -50,12 +81,17 @@ const stopWatch = sleepWatch(
 );
 
 onAfterRender(() => {
+  controls?.update?.();
   if (camera.value) {
     const result = getCameraLonLat(camera.value);
     stopWatch(async () => {
       positionModel.value = result;
     });
   }
+});
+
+onUnmounted(() => {
+  controls?.dispose();
 });
 </script>
 

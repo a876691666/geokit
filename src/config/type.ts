@@ -80,17 +80,6 @@ export interface TilesPlugins {
   xyzPlugin: XyzPlugin;
 }
 
-export interface GeoTilesConfig {
-  lruCacheMinSize: number;
-  lruCacheMaxSize: number;
-  parseQueueMaxJobs: number;
-  errorTarget: number;
-  displayActiveTiles: boolean;
-  autoDisableRendererCulling: boolean;
-  controlsConfig: ControlsConfig;
-  tilesPlugins: TilesPlugins;
-}
-
 export interface GeoPositionConfig {
   heading: number;
   pitch: number;
