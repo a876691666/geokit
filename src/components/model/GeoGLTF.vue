@@ -3,9 +3,9 @@
 </template>
 
 <script setup lang="ts">
-import { useGLTF } from '@tresjs/cientos'
 import { shallowRef, onMounted } from 'vue'
 import * as THREE from 'three'
+import { useGLTF } from './useGLTF';
 
 const props = withDefaults(
     defineProps<{
