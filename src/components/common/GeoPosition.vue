@@ -35,14 +35,14 @@ const updatePosition = () => {
   north.copy(up.clone().cross(east)).normalize();
 
   // 构建旋转矩阵
-  // 在我们的坐标系中：
+  // 使用标准的东北天（ENU）坐标系：
   // - X轴（右）对应东向 (east)
-  // - Y轴（上）对应径向向外 (up) - 但我们需要y轴指向地心，所以取反
+  // - Y轴（上）对应天向 (up) - 径向向外
   // - Z轴（前）对应北向 (north)
   const matrix = new Matrix4();
   matrix.makeBasis(
     east, // X轴：东向
-    up.clone().negate(), // Y轴：指向地心（径向向内）
+    up, // Y轴：天向（径向向外）
     north // Z轴：北向（正前方）
   );
 
