@@ -15,12 +15,18 @@ import {
 // @ts-ignore
 import { MeshLine, MeshLineMaterial } from "./THREE.MeshLine";
 import { Point } from "@/config/type";
-import { GeoEventEmits, GeoInteractiveProps, createEventHandler, hijackRaycast } from "../common/event";
+import {
+  GeoEventEmits,
+  GeoInteractiveProps,
+  createEventHandler,
+  hijackRaycast,
+} from "../common/event";
 
 interface GeoMeshlineProps extends GeoInteractiveProps {
   points: Point[];
   color?: string;
   width?: number;
+  sizeAttenuation?: boolean;
   dashArray?: number;
   dashRatio?: number;
   dashOffset?: number;
@@ -31,6 +37,7 @@ interface GeoMeshlineProps extends GeoInteractiveProps {
 
 const props = withDefaults(defineProps<GeoMeshlineProps>(), {
   renderOrder: 1,
+  sizeAttenuation: true,
   raycastMultiplier: 1,
   raycastActive: true,
 });
@@ -99,6 +106,7 @@ const createMeshline = async () => {
     dashRatio: 0,
     dashOffset: 0,
     useDash: 0,
+    sizeAttenuation: props.sizeAttenuation ? 1 : 0,
     transparent: true,
     depthTest: true,
     depthWrite: false,
@@ -123,12 +131,12 @@ const createMeshline = async () => {
   // 创建网格
   lineMesh.value = new Mesh(meshLine.value.geometry, material);
   lineMesh.value.renderOrder = props.renderOrder;
-  
+
   // 添加交互事件支持
   if (props.raycastActive) {
     hijackRaycast(lineMesh.value, props.raycastMultiplier);
   }
-  
+
   group.value.add(lineMesh.value);
   group.value.position.copy(centerPoint.value);
 
@@ -261,8 +269,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <primitive 
-    :object="group" 
+  <primitive
+    :object="group"
     v-if="group"
     @click="eventHandlers.handleClick"
     @double-click="eventHandlers.handleDoubleClick"

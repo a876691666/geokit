@@ -6,8 +6,7 @@
 
 import * as THREE from 'three'
 class MeshLine extends THREE.BufferGeometry {
-  constructor()
-  {
+  constructor() {
     super();
     this.isMeshLine = true;
     this.type = 'MeshLine'
@@ -34,16 +33,16 @@ class MeshLine extends THREE.BufferGeometry {
       // add getter to support previous api
       geometry: {
         enumerable: true,
-        get: function() {
+        get: function () {
           return this
         },
       },
       geom: {
         enumerable: true,
-        get: function() {
+        get: function () {
           return this._geom
         },
-        set: function(value) {
+        set: function (value) {
           this.setGeometry(value, this.widthCallback)
         },
       },
@@ -53,10 +52,10 @@ class MeshLine extends THREE.BufferGeometry {
       // console.log(this.points) -> points
       points: {
         enumerable: true,
-        get: function() {
+        get: function () {
           return this._points
         },
-        set: function(value) {
+        set: function (value) {
           this.setPoints(value, this.widthCallback)
         },
       },
@@ -64,21 +63,21 @@ class MeshLine extends THREE.BufferGeometry {
   }
 }
 
-MeshLine.prototype.setMatrixWorld = function(matrixWorld) {
+MeshLine.prototype.setMatrixWorld = function (matrixWorld) {
   this.matrixWorld = matrixWorld
 }
 
 // setting via a geometry is rather superfluous
 // as you're creating a unecessary geometry just to throw away
 // but exists to support previous api
-MeshLine.prototype.setGeometry = function(g, c) {
+MeshLine.prototype.setGeometry = function (g, c) {
   // as the input geometry are mutated we store them
   // for later retreival when necessary (declaritive architectures)
   this._geometry = g;
-      this.setPoints(g.getAttribute("position").array, c);
+  this.setPoints(g.getAttribute("position").array, c);
 }
 
-MeshLine.prototype.setPoints = function(points, wcb) {
+MeshLine.prototype.setPoints = function (points, wcb) {
   if (!(points instanceof Float32Array) && !(points instanceof Array)) {
     console.error(
       "ERROR: The BufferArray of points is not instancied correctly."
@@ -131,7 +130,7 @@ function MeshLineRaycast(raycaster, intersects) {
     return
   }
 
-  inverseMatrix.copy( this.matrixWorld ).invert();
+  inverseMatrix.copy(this.matrixWorld).invert();
   ray.copy(raycaster.ray).applyMatrix4(inverseMatrix)
 
   var vStart = new THREE.Vector3()
@@ -182,7 +181,7 @@ function MeshLineRaycast(raycaster, intersects) {
   }
 }
 MeshLine.prototype.raycast = MeshLineRaycast
-MeshLine.prototype.compareV3 = function(a, b) {
+MeshLine.prototype.compareV3 = function (a, b) {
   var aa = a * 6
   var ab = b * 6
   return (
@@ -192,12 +191,12 @@ MeshLine.prototype.compareV3 = function(a, b) {
   )
 }
 
-MeshLine.prototype.copyV3 = function(a) {
+MeshLine.prototype.copyV3 = function (a) {
   var aa = a * 6
   return [this.positions[aa], this.positions[aa + 1], this.positions[aa + 2]]
 }
 
-MeshLine.prototype.process = function() {
+MeshLine.prototype.process = function () {
   var l = this.positions.length / 6
 
   this.previous = []
@@ -338,7 +337,7 @@ function memcpy(src, srcOffset, dst, dstOffset, length) {
  * Fast method to advance the line by one position.  The oldest position is removed.
  * @param position
  */
-MeshLine.prototype.advance = function(position) {
+MeshLine.prototype.advance = function (position) {
   var positions = this._attributes.position.array
   var previous = this._attributes.previous.array
   var next = this._attributes.next.array
@@ -373,134 +372,133 @@ MeshLine.prototype.advance = function(position) {
 }
 
 THREE.ShaderChunk.meshline_vert = [
-    '',
-    THREE.ShaderChunk.logdepthbuf_pars_vertex,
-    THREE.ShaderChunk.fog_pars_vertex,
-    '',
-    'attribute vec3 previous;',
-    'attribute vec3 next;',
-    'attribute float side;',
-    'attribute float width;',
-    'attribute float counters;',
-    '',
-    'uniform vec2 resolution;',
-    'uniform float lineWidth;',
-    'uniform vec3 color;',
-    'uniform float opacity;',
-    'uniform float near;',
-    'uniform float far;',
-    'uniform float sizeAttenuation;',
-    'uniform vec2 offset;',
-    '',
-    'varying vec2 vUV;',
-    'varying vec4 vColor;',
-    'varying float vCounters;',
-    '',
-    'vec2 fix( vec4 i, float aspect ) {',
-    '',
-    '    vec2 res = i.xy / i.w;',
-    '    res.x *= aspect;',
-    '	 vCounters = counters;',
-    '    return res;',
-    '',
-    '}',
-    '',
-    'void main() {',
-    '',
-    '    float aspect = resolution.x / resolution.y;',
-    '    float pixelWidthRatio = 1. / (resolution.x * projectionMatrix[0][0]);',
-    '',
-    '    vColor = vec4( color, opacity );',
-    '    vUV = uv + offset;',
-    '',
-    '    mat4 m = projectionMatrix * modelViewMatrix;',
-    '    vec4 finalPosition = m * vec4( position, 1.0 );',
-    '    vec4 prevPos = m * vec4( previous, 1.0 );',
-    '    vec4 nextPos = m * vec4( next, 1.0 );',
-    '',
-    '    vec2 currentP = fix( finalPosition, aspect );',
-    '    vec2 prevP = fix( prevPos, aspect );',
-    '    vec2 nextP = fix( nextPos, aspect );',
-    '',
-    '    float pixelWidth = finalPosition.w * pixelWidthRatio;',
-    '    float w = 1.8 * pixelWidth * lineWidth * width;',
-    '',
-    '    if( sizeAttenuation == 1. ) {',
-    '        w = 1.8 * lineWidth * width;',
-    '    }',
-    '',
-    '    vec2 dir;',
-    '    if( nextP == currentP ) dir = normalize( currentP - prevP );',
-    '    else if( prevP == currentP ) dir = normalize( nextP - currentP );',
-    '    else {',
-    '        vec2 dir1 = normalize( currentP - prevP );',
-    '        vec2 dir2 = normalize( nextP - currentP );',
-    '        dir = normalize( dir1 + dir2 );',
-    '',
-    '        vec2 perp = vec2( -dir1.y, dir1.x );',
-    '        vec2 miter = vec2( -dir.y, dir.x );',
-    '        //w = clamp( w / dot( miter, perp ), 0., 4. * lineWidth * width );',
-    '',
-    '    }',
-    '',
-    '    //vec2 normal = ( cross( vec3( dir, 0. ), vec3( 0., 0., 1. ) ) ).xy;',
-    '    vec2 normal = vec2( -dir.y, dir.x );',
-    '    normal.x /= aspect;',
-    '    normal *= .5 * w;',
-    '',
-    '    vec4 offset = vec4( normal * side, 0.0, 1.0 );',
-    '    finalPosition.xy += offset.xy;',
-    '',
-    '    gl_Position = finalPosition;',
-    '',
-    THREE.ShaderChunk.logdepthbuf_vertex,
-    THREE.ShaderChunk.fog_vertex && '    vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );',
-    THREE.ShaderChunk.fog_vertex,
-    '}',
+  '',
+  THREE.ShaderChunk.logdepthbuf_pars_vertex,
+  THREE.ShaderChunk.fog_pars_vertex,
+  '',
+  'attribute vec3 previous;',
+  'attribute vec3 next;',
+  'attribute float side;',
+  'attribute float width;',
+  'attribute float counters;',
+  '',
+  'uniform vec2 resolution;',
+  'uniform float lineWidth;',
+  'uniform vec3 color;',
+  'uniform float opacity;',
+  'uniform float near;',
+  'uniform float far;',
+  'uniform float sizeAttenuation;',
+  'uniform vec2 offset;',
+  '',
+  'varying vec2 vUV;',
+  'varying vec4 vColor;',
+  'varying float vCounters;',
+  '',
+  'vec2 fix( vec4 i, float aspect ) {',
+  '',
+  '    vec2 res = i.xy / i.w;',
+  '    res.x *= aspect;',
+  '	 vCounters = counters;',
+  '    return res;',
+  '',
+  '}',
+  '',
+  'void main() {',
+  '',
+  '    float aspect = resolution.x / resolution.y;',
+  '    float pixelWidthRatio = 1. / (resolution.x * projectionMatrix[0][0]);',
+  '',
+  '    vColor = vec4( color, opacity );',
+  '    vUV = uv + offset;',
+  '',
+  '    mat4 m = projectionMatrix * modelViewMatrix;',
+  '    vec4 finalPosition = m * vec4( position, 1.0 );',
+  '    vec4 prevPos = m * vec4( previous, 1.0 );',
+  '    vec4 nextPos = m * vec4( next, 1.0 );',
+  '',
+  '    vec2 currentP = fix( finalPosition, aspect );',
+  '    vec2 prevP = fix( prevPos, aspect );',
+  '    vec2 nextP = fix( nextPos, aspect );',
+  '',
+  '    float pixelWidth = finalPosition.w * pixelWidthRatio;',
+  '    float w = 1.8 * pixelWidth * lineWidth * width;',
+  '',
+  '    if( sizeAttenuation == 1. ) {',
+  '        w = 1.8 * lineWidth * width;',
+  '    }',
+  '',
+  '    vec2 dir;',
+  '    if( nextP == currentP ) dir = normalize( currentP - prevP );',
+  '    else if( prevP == currentP ) dir = normalize( nextP - currentP );',
+  '    else {',
+  '        vec2 dir1 = normalize( currentP - prevP );',
+  '        vec2 dir2 = normalize( nextP - currentP );',
+  '        dir = normalize( dir1 + dir2 );',
+  '',
+  '        vec2 perp = vec2( -dir1.y, dir1.x );',
+  '        vec2 miter = vec2( -dir.y, dir.x );',
+  '        //w = clamp( w / dot( miter, perp ), 0., 4. * lineWidth * width );',
+  '',
+  '    }',
+  '',
+  '    //vec2 normal = ( cross( vec3( dir, 0. ), vec3( 0., 0., 1. ) ) ).xy;',
+  '    vec2 normal = vec2( -dir.y, dir.x );',
+  '    normal.x /= aspect;',
+  '    normal *= .5 * w;',
+  '',
+  '    vec4 offset = vec4( normal * side, 0.0, 1.0 );',
+  '    finalPosition.xy += offset.xy;',
+  '',
+  '    gl_Position = finalPosition;',
+  '',
+  THREE.ShaderChunk.logdepthbuf_vertex,
+  THREE.ShaderChunk.fog_vertex && '    vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );',
+  THREE.ShaderChunk.fog_vertex,
+  '}',
 ].join('\r\n')
 
 THREE.ShaderChunk.meshline_frag = [
-    '',
-    THREE.ShaderChunk.fog_pars_fragment,
-    THREE.ShaderChunk.logdepthbuf_pars_fragment,
-    '',
-    'uniform sampler2D map;',
-    'uniform sampler2D alphaMap;',
-    'uniform float useMap;',
-    'uniform float useAlphaMap;',
-    'uniform float useDash;',
-    'uniform float dashArray;',
-    'uniform float dashOffset;',
-    'uniform float dashRatio;',
-    'uniform float visibility;',
-    'uniform float alphaTest;',
-    'uniform vec2 repeat;',
-    '',
-    'varying vec2 vUV;',
-    'varying vec4 vColor;',
-    'varying float vCounters;',
-    '',
-    'void main() {',
-    '',
-    THREE.ShaderChunk.logdepthbuf_fragment,
-    '',
-    '    vec4 c = vColor;',
-    '    if( useMap == 1. ) c *= texture2D( map, vUV * repeat );',
-    '    if( useAlphaMap == 1. ) c.a *= texture2D( alphaMap, vUV * repeat ).a;',
-    '    if( c.a < alphaTest ) discard;',
-    '    if( useDash == 1. ){',
-    '        c.a *= ceil(mod(vCounters + dashOffset, dashArray) - (dashArray * dashRatio));',
-    '    }',
-    '    gl_FragColor = c;',
-    '    gl_FragColor.a *= step(vCounters, visibility);',
-    '',
-    THREE.ShaderChunk.fog_fragment,
-    '}',
+  '',
+  THREE.ShaderChunk.fog_pars_fragment,
+  THREE.ShaderChunk.logdepthbuf_pars_fragment,
+  '',
+  'uniform sampler2D map;',
+  'uniform sampler2D alphaMap;',
+  'uniform float useMap;',
+  'uniform float useAlphaMap;',
+  'uniform float useDash;',
+  'uniform float dashArray;',
+  'uniform float dashOffset;',
+  'uniform float dashRatio;',
+  'uniform float visibility;',
+  'uniform float alphaTest;',
+  'uniform vec2 repeat;',
+  '',
+  'varying vec2 vUV;',
+  'varying vec4 vColor;',
+  'varying float vCounters;',
+  '',
+  'void main() {',
+  '',
+  THREE.ShaderChunk.logdepthbuf_fragment,
+  '',
+  '    vec4 c = vColor;',
+  '    if( useMap == 1. ) c *= texture2D( map, vUV * repeat );',
+  '    if( useAlphaMap == 1. ) c.a *= texture2D( alphaMap, vUV * repeat ).a;',
+  '    if( c.a < alphaTest ) discard;',
+  '    if( useDash == 1. ){',
+  '        c.a *= ceil(mod(vCounters + dashOffset, dashArray) - (dashArray * dashRatio));',
+  '    }',
+  '    gl_FragColor = c;',
+  '    gl_FragColor.a *= step(vCounters, visibility);',
+  '',
+  THREE.ShaderChunk.fog_fragment,
+  '}',
 ].join('\r\n')
 
 class MeshLineMaterial extends THREE.ShaderMaterial {
-  constructor(parameters)
-  {
+  constructor(parameters) {
     super({
       uniforms: Object.assign({}, THREE.UniformsLib.fog, {
         lineWidth: { value: 1 },
@@ -522,8 +520,10 @@ class MeshLineMaterial extends THREE.ShaderMaterial {
         offset: { value: new THREE.Vector2(1, 1) },
       }),
 
+      depthWrite: parameters.depthWrite !== undefined ? parameters.depthWrite : true,
+      depthTest: parameters.depthTest !== undefined ? parameters.depthTest : true,
+      transparent: parameters.transparent !== undefined ? parameters.transparent : true,
       vertexShader: THREE.ShaderChunk.meshline_vert,
-
       fragmentShader: THREE.ShaderChunk.meshline_frag,
     });
     this.isMeshLineMaterial = true
@@ -532,155 +532,155 @@ class MeshLineMaterial extends THREE.ShaderMaterial {
     Object.defineProperties(this, {
       lineWidth: {
         enumerable: true,
-        get: function() {
+        get: function () {
           return this.uniforms.lineWidth.value
         },
-        set: function(value) {
+        set: function (value) {
           this.uniforms.lineWidth.value = value
         },
       },
       map: {
         enumerable: true,
-        get: function() {
+        get: function () {
           return this.uniforms.map.value
         },
-        set: function(value) {
+        set: function (value) {
           this.uniforms.map.value = value
         },
       },
       useMap: {
         enumerable: true,
-        get: function() {
+        get: function () {
           return this.uniforms.useMap.value
         },
-        set: function(value) {
+        set: function (value) {
           this.uniforms.useMap.value = value
         },
       },
       alphaMap: {
         enumerable: true,
-        get: function() {
+        get: function () {
           return this.uniforms.alphaMap.value
         },
-        set: function(value) {
+        set: function (value) {
           this.uniforms.alphaMap.value = value
         },
       },
       useAlphaMap: {
         enumerable: true,
-        get: function() {
+        get: function () {
           return this.uniforms.useAlphaMap.value
         },
-        set: function(value) {
+        set: function (value) {
           this.uniforms.useAlphaMap.value = value
         },
       },
       color: {
         enumerable: true,
-        get: function() {
+        get: function () {
           return this.uniforms.color.value
         },
-        set: function(value) {
+        set: function (value) {
           this.uniforms.color.value = value
         },
       },
       opacity: {
         enumerable: true,
-        get: function() {
+        get: function () {
           return this.uniforms.opacity.value
         },
-        set: function(value) {
+        set: function (value) {
           this.uniforms.opacity.value = value
         },
       },
       resolution: {
         enumerable: true,
-        get: function() {
+        get: function () {
           return this.uniforms.resolution.value
         },
-        set: function(value) {
+        set: function (value) {
           this.uniforms.resolution.value.copy(value)
         },
       },
       sizeAttenuation: {
         enumerable: true,
-        get: function() {
+        get: function () {
           return this.uniforms.sizeAttenuation.value
         },
-        set: function(value) {
+        set: function (value) {
           this.uniforms.sizeAttenuation.value = value
         },
       },
       dashArray: {
         enumerable: true,
-        get: function() {
+        get: function () {
           return this.uniforms.dashArray.value
         },
-        set: function(value) {
+        set: function (value) {
           this.uniforms.dashArray.value = value
           this.useDash = value !== 0 ? 1 : 0
         },
       },
       dashOffset: {
         enumerable: true,
-        get: function() {
+        get: function () {
           return this.uniforms.dashOffset.value
         },
-        set: function(value) {
+        set: function (value) {
           this.uniforms.dashOffset.value = value
         },
       },
       dashRatio: {
         enumerable: true,
-        get: function() {
+        get: function () {
           return this.uniforms.dashRatio.value
         },
-        set: function(value) {
+        set: function (value) {
           this.uniforms.dashRatio.value = value
         },
       },
       useDash: {
         enumerable: true,
-        get: function() {
+        get: function () {
           return this.uniforms.useDash.value
         },
-        set: function(value) {
+        set: function (value) {
           this.uniforms.useDash.value = value
         },
       },
       visibility: {
         enumerable: true,
-        get: function() {
+        get: function () {
           return this.uniforms.visibility.value
         },
-        set: function(value) {
+        set: function (value) {
           this.uniforms.visibility.value = value
         },
       },
       alphaTest: {
         enumerable: true,
-        get: function() {
+        get: function () {
           return this.uniforms.alphaTest.value
         },
-        set: function(value) {
+        set: function (value) {
           this.uniforms.alphaTest.value = value
         },
       },
       repeat: {
         enumerable: true,
-        get: function() {
+        get: function () {
           return this.uniforms.repeat.value
         },
-        set: function(value) {
+        set: function (value) {
           this.uniforms.repeat.value.copy(value)
         },
       },
       offset: {
         enumerable: true,
-        get: function() {
+        get: function () {
           return this.uniforms.offset.value
         },
-        set: function(value) {
+        set: function (value) {
           this.uniforms.offset.value.copy(value)
         },
       },
@@ -690,7 +690,7 @@ class MeshLineMaterial extends THREE.ShaderMaterial {
   }
 }
 
-MeshLineMaterial.prototype.copy = function(source) {
+MeshLineMaterial.prototype.copy = function (source) {
   THREE.ShaderMaterial.prototype.copy.call(this, source)
 
   this.lineWidth = source.lineWidth
