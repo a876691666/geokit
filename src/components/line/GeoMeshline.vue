@@ -108,7 +108,7 @@ const createMeshline = async () => {
     useDash: 0,
     sizeAttenuation: props.sizeAttenuation ? 1 : 0,
     transparent: true,
-    depthTest: true,
+    depthTest: false,
     depthWrite: false,
   };
 
