@@ -61,14 +61,20 @@ export const updateTextureAnimation = (
   texture: Texture,
   elapsed: number,
   duration: number,
-  state: AnimationState
+  state: AnimationState,
+  reverse: boolean = false
 ): void => {
   if (state.startTime === 0) {
     state.startTime = elapsed;
   }
 
   const deltaTime = elapsed - state.startTime;
-  const progress = (deltaTime % duration) / duration;
+  let progress = (deltaTime % duration) / duration;
+  
+  // 如果启用逆向动画，反转进度
+  if (reverse) {
+    progress = 1 - progress;
+  }
 
   texture.offset.x = -progress;
   texture.needsUpdate = true;
@@ -81,14 +87,20 @@ export const updateMeshLineAnimation = (
   material: any,
   elapsed: number,
   duration: number,
-  state: AnimationState
+  state: AnimationState,
+  reverse: boolean = false
 ): void => {
   if (state.startTime === 0) {
     state.startTime = elapsed;
   }
 
   const deltaTime = elapsed - state.startTime;
-  const progress = (deltaTime % duration) / duration;
+  let progress = (deltaTime % duration) / duration;
+  
+  // 如果启用逆向动画，反转进度
+  if (reverse) {
+    progress = 1 - progress;
+  }
 
   if (material.uniforms && material.uniforms.offset) {
     material.uniforms.offset.value.x = -progress;

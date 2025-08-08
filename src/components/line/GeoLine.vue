@@ -13,16 +13,20 @@ import {
   calculateCenterPoint,
   calculateRelativePositions,
   convertGeoPointsToVector3,
-  loadTexture,
 } from "./utils";
 import { Point } from "@/config/type";
-import { GeoEventEmits, GeoInteractiveProps, createEventHandler, hijackRaycast } from "../common/event";
+import {
+  GeoEventEmits,
+  GeoInteractiveProps,
+  createEventHandler,
+  hijackRaycast,
+} from "../common/event";
 
 interface GeoLineProps extends GeoInteractiveProps {
   points: Point[];
   color?: string;
   width?: number;
-  texture?: string;
+  map?: Texture;
   renderOrder?: number;
 }
 
@@ -38,12 +42,11 @@ const group = shallowRef<Group>();
 const line = shallowRef<Line<BufferGeometry, LineBasicMaterial>>();
 const positions = ref<Vector3[]>([]);
 const centerPoint = ref<Vector3>(new Vector3());
-const textureRef = shallowRef<Texture>();
 
 // 创建事件处理器
 const eventHandlers = createEventHandler(emit, props, props.raycastActive, line);
 
-const createLine = async () => {
+const createLine = () => {
   // 创建组
   group.value = new Group();
 
@@ -62,27 +65,21 @@ const createLine = async () => {
     linewidth: props.width || 1,
   };
 
-  // 加载纹理
-  if (props.texture) {
-    try {
-      textureRef.value = await loadTexture(props.texture);
-      textureRef.value.wrapS = textureRef.value.wrapT = 1000; // RepeatWrapping
-      materialOptions.map = textureRef.value;
-    } catch (error) {
-      console.warn("Failed to load texture:", error);
-    }
+  // 设置贴图
+  if (props.map) {
+    materialOptions.map = props.map;
   }
 
   const material = new LineBasicMaterial(materialOptions);
 
   line.value = new Line(geometry, material);
   line.value.renderOrder = props.renderOrder;
-  
+
   // 添加交互事件支持
   if (props.raycastActive) {
     hijackRaycast(line.value, props.raycastMultiplier);
   }
-  
+
   group.value.add(line.value);
   group.value.position.copy(centerPoint.value);
 };
@@ -135,26 +132,13 @@ watch(
 );
 
 watch(
-  () => props.texture,
-  async (newTexture) => {
+  () => props.map,
+  (newMap) => {
     if (line.value) {
-      if (newTexture) {
-        try {
-          if (textureRef.value) {
-            textureRef.value.dispose();
-          }
-          textureRef.value = await loadTexture(newTexture);
-          textureRef.value.wrapS = textureRef.value.wrapT = 1000; // RepeatWrapping
-          line.value.material.map = textureRef.value;
-          line.value.material.needsUpdate = true;
-        } catch (error) {
-          console.warn("Failed to load texture:", error);
-        }
+      if (newMap) {
+        line.value.material.map = props.map || null;
+        line.value.material.needsUpdate = true;
       } else {
-        if (textureRef.value) {
-          textureRef.value.dispose();
-          textureRef.value = undefined;
-        }
         line.value.material.map = null;
         line.value.material.needsUpdate = true;
       }
@@ -167,9 +151,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  if (textureRef.value) {
-    textureRef.value.dispose();
-  }
   if (line.value) {
     line.value.geometry.dispose();
     line.value.material.dispose();
@@ -181,8 +162,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <primitive 
-    :object="group" 
+  <primitive
+    :object="group"
     v-if="group"
     @click="eventHandlers.handleClick"
     @double-click="eventHandlers.handleDoubleClick"

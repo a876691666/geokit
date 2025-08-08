@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, shallowRef, ref, watch } from "vue";
+import { onMounted, onUnmounted, shallowRef, ref, watch, inject } from "vue";
 import {
   TubeGeometry,
   MeshBasicMaterial,
@@ -11,27 +11,25 @@ import {
   Texture,
   DoubleSide,
 } from "three";
-import { useRenderLoop } from "@tresjs/core";
 import {
   calculateCenterPoint,
   calculateRelativePositions,
   convertGeoPointsToVector3,
-  loadTexture,
-  AnimationState,
-  startAnimation,
-  stopAnimation,
-  updateTextureAnimation,
 } from "./utils";
 import { Point } from "@/config/type";
-import { GeoEventEmits, GeoInteractiveProps, createEventHandler, hijackRaycast } from "../common/event";
+import {
+  GeoEventEmits,
+  GeoInteractiveProps,
+  createEventHandler,
+  hijackRaycast,
+} from "../common/event";
 
 interface GeoTubelineProps extends GeoInteractiveProps {
   points: Point[];
   color?: string;
   width?: number;
   tubularSegments?: number;
-  texture?: string;
-  duration?: number;
+  map?: Texture;
   renderOrder?: number;
 }
 
@@ -46,26 +44,20 @@ const group = shallowRef<Group>();
 const tube = shallowRef<Mesh<TubeGeometry, MeshBasicMaterial>>();
 const positions = ref<Vector3[]>([]);
 const centerPoint = ref<Vector3>(new Vector3());
-const textureRef = shallowRef<Texture>();
-const animationState = ref<AnimationState>({ startTime: 0, isAnimating: false });
 
 // 创建事件处理器
 const eventHandlers = createEventHandler(emit, props, props.raycastActive, tube);
 
-const { onLoop } = useRenderLoop();
+// 注入动画注册方法
+const registerAnimationTarget = inject<(target: any, type: "meshline" | "texture", texture?: Texture) => void>("registerAnimationTarget");
+const unregisterAnimationTarget = inject<(target: any) => void>("unregisterAnimationTarget");
 
 // 将宽度转换为半径 (宽度的一半作为半径)
 const getRadius = () => {
   return (props.width || 2) * 0.3; // 宽度转换为合适的半径值
 };
 
-onLoop(({ elapsed }) => {
-  if (!animationState.value.isAnimating || !textureRef.value || !props.duration) return;
-
-  updateTextureAnimation(textureRef.value, elapsed, props.duration, animationState.value);
-});
-
-const createTube = async () => {
+const createTube = () => {
   group.value = new Group();
 
   positions.value = convertGeoPointsToVector3(props.points);
@@ -87,37 +79,31 @@ const createTube = async () => {
     side: DoubleSide,
   };
 
-  // 加载纹理
-  if (props.texture) {
-    try {
-      textureRef.value = await loadTexture(props.texture);
-      textureRef.value.wrapS = textureRef.value.wrapT = 1000; // RepeatWrapping
-      materialOptions.map = textureRef.value;
-    } catch (error) {
-      console.warn("Failed to load texture:", error);
-    }
+  // 设置贴图
+  if (props.map) {
+    materialOptions.map = props.map;
   }
 
   const material = new MeshBasicMaterial(materialOptions);
 
   tube.value = new Mesh(geometry, material);
   tube.value.renderOrder = props.renderOrder;
-  
+
   // 添加交互事件支持
   if (props.raycastActive) {
     hijackRaycast(tube.value, props.raycastMultiplier);
   }
-  
+
   group.value.add(tube.value);
   group.value.position.copy(centerPoint.value);
 
-  // 开始UV动画
-  if (textureRef.value && props.duration) {
-    startAnimation(animationState.value);
+  // 注册到动画组件
+  if (registerAnimationTarget) {
+    registerAnimationTarget(tube.value, "texture", props.map);
   }
 };
 
-const updateGeometryPositions = async () => {
+const updateGeometryPositions = () => {
   if (tube.value) {
     const oldGeometry = tube.value.geometry;
     oldGeometry.dispose();
@@ -166,46 +152,24 @@ watch(
 );
 
 watch(
-  () => props.texture,
-  async (newTexture) => {
+  () => props.map,
+  (newMap) => {
     if (tube.value) {
-      if (newTexture) {
-        try {
-          if (textureRef.value) {
-            textureRef.value.dispose();
-          }
-          textureRef.value = await loadTexture(newTexture);
-          textureRef.value.wrapS = textureRef.value.wrapT = 1000; // RepeatWrapping
-          tube.value.material.map = textureRef.value;
-          tube.value.material.needsUpdate = true;
-
-          // 重新开始动画
-          if (props.duration) {
-            startAnimation(animationState.value);
-          }
-        } catch (error) {
-          console.warn("Failed to load texture:", error);
+      if (newMap) {
+        tube.value.material.map = newMap;
+        tube.value.material.needsUpdate = true;
+        // 重新注册动画目标，更新纹理
+        if (registerAnimationTarget) {
+          registerAnimationTarget(tube.value, "texture", newMap);
         }
       } else {
-        if (textureRef.value) {
-          textureRef.value.dispose();
-          textureRef.value = undefined;
-        }
         tube.value.material.map = null;
         tube.value.material.needsUpdate = true;
-        stopAnimation(animationState.value);
+        // 重新注册动画目标，移除纹理
+        if (registerAnimationTarget) {
+          registerAnimationTarget(tube.value, "texture", undefined);
+        }
       }
-    }
-  }
-);
-
-watch(
-  () => props.duration,
-  (newDuration) => {
-    if (newDuration && textureRef.value) {
-      startAnimation(animationState.value);
-    } else {
-      stopAnimation(animationState.value);
     }
   }
 );
@@ -215,11 +179,12 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  stopAnimation(animationState.value);
-  if (textureRef.value) {
-    textureRef.value.dispose();
-  }
   if (tube.value) {
+    // 注销动画目标
+    if (unregisterAnimationTarget) {
+      unregisterAnimationTarget(tube.value);
+    }
+    
     tube.value.geometry.dispose();
     tube.value.material.dispose();
   }
@@ -230,8 +195,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <primitive 
-    :object="group" 
+  <primitive
+    :object="group"
     v-if="group"
     @click="eventHandlers.handleClick"
     @double-click="eventHandlers.handleDoubleClick"

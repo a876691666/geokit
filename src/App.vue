@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import MainIndex from "./pages/geoBodyCase.vue";
+import MainIndex from "./pages/geoLineCase.vue";
 </script>
 
 <template>

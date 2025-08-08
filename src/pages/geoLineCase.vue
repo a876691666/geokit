@@ -164,6 +164,20 @@
         >
           调节速度
         </button>
+        <button
+          @click="toggleReverse"
+          style="
+            margin: 2px;
+            padding: 8px 12px;
+            background: #ff9800;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+          "
+        >
+          {{ isReverse ? "正向动画" : "逆向动画" }}
+        </button>
       </div>
 
       <!-- 当前状态显示 -->
@@ -179,6 +193,7 @@
           <div>🖼️ 贴图: {{ hasTexture ? "开启" : "关闭" }}</div>
           <div>🎬 动画: {{ isAnimating ? "播放中" : "已停止" }}</div>
           <div>⚡ 速度: {{ currentSpeed }}x</div>
+          <div>🔄 方向: {{ isReverse ? "逆向" : "正向" }}</div>
         </div>
       </div>
 
@@ -187,7 +202,8 @@
         <div>🟢 基础线条 (GeoLine) - 支持颜色、宽度、贴图、动画</div>
         <div>🟠 管道线条 (GeoTubeline) - 支持颜色、宽度、贴图、动画</div>
         <div>🔵 Mesh线条 (GeoMeshline) - 支持颜色、宽度、虚线、贴图、动画</div>
-        <div>✈️ 飞线 (GeoFlyline) - 自动弧线，支持两种类型</div>
+        <div>✈️ 飞线 (GeoFlyline) - 自动弧线，支持两种类型，内置动画功能</div>
+        <div>🎬 绿色飞线 - 演示新的内置动画功能</div>
         <div style="margin-top: 5px; color: #4caf50">💡 贴图图标来自 Icons8</div>
       </div>
     </div>
@@ -198,74 +214,106 @@
     <GeoScene />
     <TDTTiles tk="60e749f74ee948da9887c8a82fc20e09" />
 
-    <!-- 基础线条 - 使用统一的颜色、宽度、贴图和动画 -->
-    <GeoLine
-      :points="linePoints1"
-      :color="currentColor"
-      :width="currentWidth"
-      :texture="hasTexture ? textureUrl : undefined"
-      :duration="isAnimating ? animationDuration : undefined"
-    />
+    <!-- 飞线示例 - 使用内置动画功能 -->
+    <Suspense>
+      <UseTexture v-slot="{ textures }" :map="textureUrl">
+        <GeoTextureProps
+          :texture="textures.map"
+          :repeat="[1, 1]"
+          :wrapS="THREE.RepeatWrapping"
+          :wrapT="THREE.RepeatWrapping"
+        />
 
-    <!-- 管道线条 - 使用统一的颜色、宽度、贴图和动画 -->
-    <GeoTubeline
-      :points="linePoints2"
-      :color="currentColor"
-      :width="currentWidth"
-      :texture="hasTexture ? textureUrl : undefined"
-      :duration="isAnimating ? animationDuration : undefined"
-    />
+        <GeoFlyline
+          :start="flylineStart1"
+          :end="flylineEnd1"
+          type="tube"
+          color="#00ff00"
+          :width="currentWidth + 1"
+          :map="textures.map"
+          :arcHeight="currentArcHeight * 0.8"
+          :segments="currentSegments"
+          autoStart
+          :duration="2000"
+          :reverse="isReverse"
+        />
 
-    <!-- Mesh线条 - 使用统一的颜色、宽度、虚线、贴图和动画设置 -->
-    <GeoMeshline
-      :points="linePoints3"
-      :color="currentColor"
-      :width="currentWidth"
-      :dashArray="isDashed ? 0.2 : 0"
-      :dashRatio="0.5"
-      :dashOffset="0"
-      :texture="hasTexture ? textureUrl : undefined"
-      :duration="isAnimating ? animationDuration : undefined"
-    />
+        <!-- 基础线条 - 使用统一的颜色、宽度、贴图和动画 -->
+        <GeoLine
+          :points="linePoints1"
+          :color="currentColor"
+          :width="currentWidth"
+          :map="textures.map"
+        />
 
-    <!-- 飞线示例 - 短距离飞线 -->
-    <GeoFlyline
-      :start="flylineStart1"
-      :end="flylineEnd1"
-      :type="flylineType"
-      :color="currentColor"
-      :width="currentWidth"
-      :texture="hasTexture ? textureUrl : undefined"
-      :duration="isAnimating ? animationDuration : undefined"
-      :arcHeight="currentArcHeight"
-      :segments="currentSegments"
-    />
+        <GeoTextureClone :="textures" v-slot="{ textures }">
+          <GeoLineAnimation :reverse="isReverse" :duration="300">
+            <!-- 管道线条 - 使用统一的颜色、宽度、贴图和动画 -->
+            <GeoTubeline
+              :points="linePoints2"
+              :color="currentColor"
+              :width="currentWidth"
+              :map="textures.map"
+            />
+          </GeoLineAnimation>
+        </GeoTextureClone>
 
-    <!-- 飞线示例 - 中距离飞线 -->
-    <GeoFlyline
-      :start="flylineStart2"
-      :end="flylineEnd2"
-      :type="flylineType"
-      :color="currentColor"
-      :width="currentWidth"
-      :texture="hasTexture ? textureUrl : undefined"
-      :duration="isAnimating ? animationDuration : undefined"
-      :arcHeight="currentArcHeight * 1.5"
-      :segments="currentSegments"
-    />
+        <GeoLineAnimation :reverse="isReverse">
+          <!-- Mesh线条 - 使用统一的颜色、宽度、虚线、贴图和动画设置 -->
+          <GeoMeshline
+            :points="linePoints3"
+            :color="currentColor"
+            :width="currentWidth"
+            :dashArray="isDashed ? 0.2 : 0"
+            :dashRatio="0.5"
+            :dashOffset="0"
+            :map="textures.map"
+          />
+        </GeoLineAnimation>
 
-    <!-- 飞线示例 - 长距离飞线 -->
-    <GeoFlyline
-      :start="flylineStart3"
-      :end="flylineEnd3"
-      :type="flylineType"
-      :color="currentColor"
-      :width="currentWidth"
-      :texture="hasTexture ? textureUrl : undefined"
-      :duration="isAnimating ? animationDuration : undefined"
-      :arcHeight="currentArcHeight * 2"
-      :segments="currentSegments"
-    />
+        <!-- 飞线示例 - 短距离飞线 -->
+        <GeoFlyline
+          :start="flylineStart1"
+          :end="flylineEnd1"
+          type="mesh"
+          :color="currentColor"
+          :width="currentWidth"
+          :map="textures.map"
+          :duration="isAnimating ? animationDuration : undefined"
+          :arcHeight="currentArcHeight"
+          :segments="currentSegments"
+          :reverse="isReverse"
+        />
+
+        <!-- 飞线示例 - 中距离飞线 -->
+        <GeoFlyline
+          :start="flylineStart2"
+          :end="flylineEnd2"
+          type="mesh"
+          :color="currentColor"
+          :width="currentWidth"
+          :map="textures.map"
+          :duration="isAnimating ? animationDuration : undefined"
+          :arcHeight="currentArcHeight * 1.5"
+          :segments="currentSegments"
+          :reverse="isReverse"
+        />
+
+        <!-- 飞线示例 - 长距离飞线 -->
+        <GeoFlyline
+          :start="flylineStart3"
+          :end="flylineEnd3"
+          type="mesh"
+          :color="currentColor"
+          :width="currentWidth"
+          :map="textures.map"
+          :duration="isAnimating ? animationDuration : undefined"
+          :arcHeight="currentArcHeight * 2"
+          :segments="currentSegments"
+          :reverse="isReverse"
+        />
+      </UseTexture>
+    </Suspense>
   </GeoCanvas>
 </template>
 
@@ -279,9 +327,14 @@ import {
   GeoMeshline,
   GeoFlyline,
   GeoScene,
+  GeoLineAnimation,
+  GeoTextureClone,
+  GeoPositionConfig,
 } from "..";
 import { ref, computed } from "vue";
-import { GeoPositionConfig } from "../config/type";
+import { UseTexture } from "@tresjs/core";
+import GeoTextureProps from "@/components/common/GeoTextureProps.vue";
+import * as THREE from "three";
 
 // 相机位置
 const cameraPosition = ref<GeoPositionConfig>({
@@ -306,7 +359,8 @@ const currentSegments = ref(20);
 const hasTexture = ref(false);
 const isAnimating = ref(false);
 const currentSpeed = ref(1);
-const textureUrl = "/plugins/postProcessing/image/8x16_ascii_font_sorted.gif";
+const isReverse = ref(false);
+const textureUrl = "/line2.png";
 
 // 计算动画持续时间（基于速度）
 const animationDuration = computed(() => {
@@ -409,6 +463,10 @@ const toggleAnimation = () => {
 const changeSpeed = () => {
   speedIndex = (speedIndex + 1) % speeds.length;
   currentSpeed.value = speeds[speedIndex];
+};
+
+const toggleReverse = () => {
+  isReverse.value = !isReverse.value;
 };
 </script>
 

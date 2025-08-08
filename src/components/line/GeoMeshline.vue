@@ -1,16 +1,10 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, shallowRef, ref, watch } from "vue";
+import { onMounted, onUnmounted, shallowRef, ref, watch, inject } from "vue";
 import { Group, Vector3, Mesh, BufferGeometry, BufferAttribute, Texture } from "three";
-import { useRenderLoop } from "@tresjs/core";
 import {
   calculateCenterPoint,
   calculateRelativePositions,
   convertGeoPointsToVector3,
-  loadTexture,
-  AnimationState,
-  startAnimation,
-  stopAnimation,
-  updateMeshLineAnimation,
 } from "./utils";
 // @ts-ignore
 import { MeshLine, MeshLineMaterial } from "./THREE.MeshLine";
@@ -30,8 +24,7 @@ interface GeoMeshlineProps extends GeoInteractiveProps {
   dashArray?: number;
   dashRatio?: number;
   dashOffset?: number;
-  texture?: string;
-  duration?: number;
+  map?: Texture;
   renderOrder?: number;
 }
 
@@ -49,13 +42,13 @@ const meshLine = shallowRef<any>();
 const lineMesh = shallowRef<Mesh>();
 const positions = ref<Vector3[]>([]);
 const centerPoint = ref<Vector3>(new Vector3());
-const textureRef = shallowRef<Texture>();
-const animationState = ref<AnimationState>({ startTime: 0, isAnimating: false });
 
 // 创建事件处理器
 const eventHandlers = createEventHandler(emit, props, props.raycastActive, lineMesh);
 
-const { onLoop } = useRenderLoop();
+// 注入动画注册方法
+const registerAnimationTarget = inject<(target: any, type: "meshline" | "texture", texture?: Texture) => void>("registerAnimationTarget");
+const unregisterAnimationTarget = inject<(target: any) => void>("unregisterAnimationTarget");
 
 const createGeometry = (relativePositions: Vector3[]) => {
   const geometry = new BufferGeometry();
@@ -71,14 +64,7 @@ const createGeometry = (relativePositions: Vector3[]) => {
   return geometry;
 };
 
-onLoop(({ elapsed }) => {
-  if (!animationState.value.isAnimating || !lineMesh.value || !props.duration) return;
-
-  const material = lineMesh.value.material as any;
-  updateMeshLineAnimation(material, elapsed, props.duration, animationState.value);
-});
-
-const createMeshline = async () => {
+const createMeshline = () => {
   if (props.points.length < 2) return;
 
   group.value = new Group();
@@ -112,17 +98,10 @@ const createMeshline = async () => {
     depthWrite: false,
   };
 
-  // 加载纹理
-  if (props.texture) {
-    try {
-      textureRef.value = await loadTexture(props.texture);
-      textureRef.value.wrapS = 1000; // RepeatWrapping
-      textureRef.value.wrapT = 1000; // RepeatWrapping
-      materialOptions.map = textureRef.value;
-      materialOptions.useMap = 1;
-    } catch (error) {
-      console.warn("Failed to load texture:", error);
-    }
+  // 设置贴图
+  if (props.map) {
+    materialOptions.map = props.map;
+    materialOptions.useMap = 1;
   }
 
   // 创建材质
@@ -140,9 +119,9 @@ const createMeshline = async () => {
   group.value.add(lineMesh.value);
   group.value.position.copy(centerPoint.value);
 
-  // 开始UV动画
-  if (textureRef.value && props.duration) {
-    startAnimation(animationState.value);
+  // 注册到动画组件
+  if (registerAnimationTarget) {
+    registerAnimationTarget(lineMesh.value, "meshline", props.map);
   }
 };
 
@@ -190,54 +169,29 @@ watch(
 );
 
 watch(
-  () => props.texture,
-  async (newTexture) => {
+  () => props.map,
+  (newMap) => {
     if (lineMesh.value) {
       const material = lineMesh.value.material as any;
-      if (newTexture) {
-        try {
-          if (textureRef.value) {
-            textureRef.value.dispose();
-          }
-          textureRef.value = await loadTexture(newTexture);
-          textureRef.value.wrapS = 1000; // RepeatWrapping
-          textureRef.value.wrapT = 1000; // RepeatWrapping
-
-          if (material.uniforms) {
-            material.uniforms.map.value = textureRef.value;
-            material.uniforms.useMap.value = 1;
-          }
-
-          // 重新开始动画
-          if (props.duration) {
-            startAnimation(animationState.value);
-          }
-        } catch (error) {
-          console.warn("Failed to load texture:", error);
+      if (newMap) {
+        if (material.uniforms) {
+          material.uniforms.map.value = newMap;
+          material.uniforms.useMap.value = 1;
+        }
+        // 重新注册动画目标，更新纹理
+        if (registerAnimationTarget) {
+          registerAnimationTarget(lineMesh.value, "meshline", newMap);
         }
       } else {
-        if (textureRef.value) {
-          textureRef.value.dispose();
-          textureRef.value = undefined;
-        }
-
         if (material.uniforms) {
           material.uniforms.map.value = null;
           material.uniforms.useMap.value = 0;
         }
-        stopAnimation(animationState.value);
+        // 重新注册动画目标，移除纹理
+        if (registerAnimationTarget) {
+          registerAnimationTarget(lineMesh.value, "meshline", undefined);
+        }
       }
-    }
-  }
-);
-
-watch(
-  () => props.duration,
-  (newDuration) => {
-    if (newDuration && textureRef.value) {
-      startAnimation(animationState.value);
-    } else {
-      stopAnimation(animationState.value);
     }
   }
 );
@@ -247,11 +201,12 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  stopAnimation(animationState.value);
-  if (textureRef.value) {
-    textureRef.value.dispose();
-  }
   if (lineMesh.value) {
+    // 注销动画目标
+    if (unregisterAnimationTarget) {
+      unregisterAnimationTarget(lineMesh.value);
+    }
+    
     if (lineMesh.value.geometry) {
       lineMesh.value.geometry.dispose();
     }
@@ -281,5 +236,7 @@ onUnmounted(() => {
     @pointer-down="eventHandlers.handlePointerDown"
     @pointer-up="eventHandlers.handlePointerUp"
     @wheel="eventHandlers.handleWheel"
-  ></primitive>
+  >
+    <slot />
+  </primitive>
 </template>

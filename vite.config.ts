@@ -16,4 +16,7 @@ export default defineConfig({
       "@icegl/geokit": path.resolve(__dirname, "src/index.ts"),
     },
   },
+  server: {
+    port: 9988,
+  }
 });
