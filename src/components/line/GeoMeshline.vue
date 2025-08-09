@@ -34,7 +34,7 @@ const props = withDefaults(defineProps<GeoMeshlineProps>(), {
   sizeAttenuation: true,
   raycastMultiplier: 1,
   raycastActive: true,
-  repeat: [1, 1],
+  repeat: () => [1, 1],
 });
 
 const emit = defineEmits<GeoEventEmits>();
