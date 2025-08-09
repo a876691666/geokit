@@ -26,6 +26,7 @@ interface GeoMeshlineProps extends GeoInteractiveProps {
   dashOffset?: number;
   map?: Texture;
   renderOrder?: number;
+  repeat?: number[];
 }
 
 const props = withDefaults(defineProps<GeoMeshlineProps>(), {
@@ -33,6 +34,7 @@ const props = withDefaults(defineProps<GeoMeshlineProps>(), {
   sizeAttenuation: true,
   raycastMultiplier: 1,
   raycastActive: true,
+  repeat: [1, 1],
 });
 
 const emit = defineEmits<GeoEventEmits>();
@@ -47,7 +49,10 @@ const centerPoint = ref<Vector3>(new Vector3());
 const eventHandlers = createEventHandler(emit, props, props.raycastActive, lineMesh);
 
 // 注入动画注册方法
-const registerAnimationTarget = inject<(target: any, type: "meshline" | "texture", texture?: Texture) => void>("registerAnimationTarget");
+const registerAnimationTarget =
+  inject<(target: any, type: "meshline" | "texture", texture?: Texture) => void>(
+    "registerAnimationTarget"
+  );
 const unregisterAnimationTarget = inject<(target: any) => void>("unregisterAnimationTarget");
 
 const createGeometry = (relativePositions: Vector3[]) => {
@@ -96,6 +101,7 @@ const createMeshline = () => {
     transparent: true,
     depthTest: false,
     depthWrite: false,
+    repeat: props.repeat,
   };
 
   // 设置贴图
@@ -206,7 +212,7 @@ onUnmounted(() => {
     if (unregisterAnimationTarget) {
       unregisterAnimationTarget(lineMesh.value);
     }
-    
+
     if (lineMesh.value.geometry) {
       lineMesh.value.geometry.dispose();
     }
