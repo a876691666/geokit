@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, shallowRef, ref, watch, inject } from "vue";
-import { Group, Vector3, Mesh, BufferGeometry, BufferAttribute, Texture } from "three";
+import { Group, Vector3, Vector2, Mesh, BufferGeometry, BufferAttribute, Texture } from "three";
 import {
   calculateCenterPoint,
   calculateRelativePositions,
@@ -101,7 +101,7 @@ const createMeshline = () => {
     transparent: true,
     depthTest: false,
     depthWrite: false,
-    repeat: props.repeat,
+    repeat: new Vector2(...props.repeat),
   };
 
   // 设置贴图
@@ -130,6 +130,18 @@ const createMeshline = () => {
     registerAnimationTarget(lineMesh.value, "meshline", props.map);
   }
 };
+
+watch(
+  () => props.repeat,
+  (newRepeat) => {
+    if (lineMesh.value && lineMesh.value.material) {
+      const material = lineMesh.value.material as any;
+      material.uniforms.repeat.value.set(newRepeat[0], newRepeat[1]);
+      material.needsUpdate = true;
+    }
+  },
+  { immediate: true }
+);
 
 const updateGeometryPositions = () => {
   if (!meshLine.value || !lineMesh.value || props.points.length < 2) return;
