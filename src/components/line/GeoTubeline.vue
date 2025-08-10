@@ -31,12 +31,16 @@ interface GeoTubelineProps extends GeoInteractiveProps {
   tubularSegments?: number;
   map?: Texture;
   renderOrder?: number;
+  opacity?: number;
+  repeat?: number[];
 }
 
 const props = withDefaults(defineProps<GeoTubelineProps>(), {
   renderOrder: 1,
   raycastMultiplier: 1,
   raycastActive: true,
+  opacity: 1,
+  repeat: () => [1, 1],
 });
 
 const emit = defineEmits<GeoEventEmits>();
@@ -77,11 +81,18 @@ const createTube = () => {
     color: props.color || "#ffffff",
     transparent: true,
     side: DoubleSide,
+    opacity: props.opacity !== undefined ? props.opacity : 1,
   };
 
   // 设置贴图
   if (props.map) {
     materialOptions.map = props.map;
+    
+    // 设置纹理重复
+    if (props.repeat && props.repeat.length >= 2) {
+      props.map.repeat.set(props.repeat[0], props.repeat[1]);
+      props.map.needsUpdate = true;
+    }
   }
 
   const material = new MeshBasicMaterial(materialOptions);
@@ -145,6 +156,27 @@ watch(
 );
 
 watch(
+  () => props.opacity,
+  (newOpacity) => {
+    if (tube.value) {
+      tube.value.material.opacity = newOpacity !== undefined ? newOpacity : 1;
+      tube.value.material.needsUpdate = true;
+    }
+  }
+);
+
+watch(
+  () => props.repeat,
+  (newRepeat) => {
+    if (tube.value && tube.value.material.map && newRepeat && newRepeat.length >= 2) {
+      tube.value.material.map.repeat.set(newRepeat[0], newRepeat[1]);
+      tube.value.material.map.needsUpdate = true;
+    }
+  },
+  { deep: true }
+);
+
+watch(
   () => [props.width, props.tubularSegments],
   () => {
     updateGeometryPositions();
@@ -157,6 +189,13 @@ watch(
     if (tube.value) {
       if (newMap) {
         tube.value.material.map = newMap;
+        
+        // 设置纹理重复
+        if (props.repeat && props.repeat.length >= 2) {
+          newMap.repeat.set(props.repeat[0], props.repeat[1]);
+          newMap.needsUpdate = true;
+        }
+        
         tube.value.material.needsUpdate = true;
         // 重新注册动画目标，更新纹理
         if (registerAnimationTarget) {

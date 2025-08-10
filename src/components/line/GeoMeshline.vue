@@ -26,6 +26,7 @@ interface GeoMeshlineProps extends GeoInteractiveProps {
   dashOffset?: number;
   map?: Texture;
   renderOrder?: number;
+  opacity?: number;
   repeat?: number[];
 }
 
@@ -34,6 +35,7 @@ const props = withDefaults(defineProps<GeoMeshlineProps>(), {
   sizeAttenuation: true,
   raycastMultiplier: 1,
   raycastActive: true,
+  opacity: 1,
   repeat: () => [1, 1],
 });
 
@@ -137,6 +139,18 @@ watch(
     if (lineMesh.value && lineMesh.value.material) {
       const material = lineMesh.value.material as any;
       material.uniforms.repeat.value.set(newRepeat[0], newRepeat[1]);
+      material.needsUpdate = true;
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => props.opacity,
+  (newOpacity) => {
+    if (lineMesh.value && lineMesh.value.material) {
+      const material = lineMesh.value.material as any;
+      material.opacity = newOpacity !== undefined ? newOpacity : 1;
       material.needsUpdate = true;
     }
   },

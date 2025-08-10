@@ -23,6 +23,9 @@ interface GeoFlylineProps extends GeoInteractiveProps {
   // 动画相关属性
   duration?: number; // 动画持续时间（毫秒）
   reverse?: boolean; // 是否逆向动画
+  // 渲染相关属性
+  opacity?: number; // 透明度
+  repeat?: number[]; // 纹理重复
 }
 
 const props = withDefaults(defineProps<GeoFlylineProps>(), {
@@ -37,6 +40,8 @@ const props = withDefaults(defineProps<GeoFlylineProps>(), {
   raycastActive: true,
   duration: 2000, // 默认2秒动画
   reverse: false,
+  opacity: 1,
+  repeat: () => [1, 1],
 });
 
 const emit = defineEmits<GeoEventEmits>();
@@ -145,6 +150,8 @@ defineExpose({
       :map="props.map"
       :tubularSegments="props.tubularSegments"
       :renderOrder="props.renderOrder"
+      :opacity="props.opacity"
+      :repeat="props.repeat"
       :id="props.id"
       :raycastActive="props.raycastActive"
       :raycastMultiplier="props.raycastMultiplier"
@@ -165,6 +172,8 @@ defineExpose({
       :width="props.width"
       :map="props.map"
       :renderOrder="props.renderOrder"
+      :opacity="props.opacity"
+      :repeat="props.repeat"
       :id="props.id"
       :raycastActive="props.raycastActive"
       :raycastMultiplier="props.raycastMultiplier"
@@ -190,6 +199,8 @@ defineExpose({
       :map="props.map"
       :tubularSegments="props.tubularSegments"
       :renderOrder="props.renderOrder"
+      :opacity="props.opacity"
+      :repeat="props.repeat"
       :id="props.id"
       :raycastActive="props.raycastActive"
       :raycastMultiplier="props.raycastMultiplier"
@@ -210,6 +221,8 @@ defineExpose({
       :width="props.width"
       :map="props.map"
       :renderOrder="props.renderOrder"
+      :opacity="props.opacity"
+      :repeat="props.repeat"
       :id="props.id"
       :raycastActive="props.raycastActive"
       :raycastMultiplier="props.raycastMultiplier"
