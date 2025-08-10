@@ -25,7 +25,7 @@ const props = withDefaults(defineProps<GeoLineAnimationProps>(), {
 
 const animationState = ref<AnimationState>({ startTime: 0, isAnimating: false });
 const animationTargets = ref<
-  Array<{ target: any; type: "meshline" | "texture"; texture?: Texture }>
+  Array<{ target: any; type: "meshline" | "texture"; texture?: any }>
 >([]);
 
 const { onLoop } = useRenderLoop();
