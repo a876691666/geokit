@@ -35,6 +35,7 @@ export default defineConfig({
     },
     minify: true,
     outDir: "dist", // 输出目录为 dist
+    copyPublicDir: false, // 不拷贝静态资源
     rollupOptions: {
       external: ["three", "vue", "@tresjs/core", "@tresjs/post-processing"], // Specify external dependencies here
       output: {
