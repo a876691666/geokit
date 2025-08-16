@@ -80,10 +80,18 @@ export interface TilesPlugins {
   xyzPlugin: XyzPlugin;
 }
 
-export interface GeoPositionConfig {
-  heading: number;
+export interface GeoSpherical {
   pitch: number;
+  heading: number;
   distance: number;
+}
+
+export interface GeoMapControlsTarget extends GeoSpherical {
+  x?: number;
+  y?: number;
+}
+
+export interface GeoPositionConfig extends GeoSpherical {
   longitude: number;
   latitude: number;
 }
@@ -117,4 +125,8 @@ export interface GeoJSONMultiLineString {
   coordinates: number[][][]; // [[[lon, lat], [lon, lat]], [[lon, lat], [lon, lat]], ...]
 }
 
-export type GeoJSONGeometry = GeoJSONPolygon | GeoJSONMultiPolygon | GeoJSONLineString | GeoJSONMultiLineString;
+export type GeoJSONGeometry =
+  | GeoJSONPolygon
+  | GeoJSONMultiPolygon
+  | GeoJSONLineString
+  | GeoJSONMultiLineString;

@@ -5,14 +5,14 @@ import { lonlatToECEF } from "@/utils/controls";
 import { Point } from "@/config/type";
 
 const props = defineProps<{
-  point: Point;
+  point?: Point;
 }>();
 
 const position = shallowRef(new Vector3());
 const rotation = shallowRef(new Euler());
 
 const updatePosition = () => {
-  const ecef = lonlatToECEF(props.point.lon, props.point.lat, props.point.height || 0);
+  const ecef = lonlatToECEF(props.point?.lon, props.point?.lat, props.point?.height || 0);
   position.value = ecef;
 
   // 计算局部坐标系
@@ -57,7 +57,7 @@ const updatePosition = () => {
   rotation.value = rotation.value.clone();
 };
 
-watch([() => props.point.lon, () => props.point.lat, () => props.point.height], () => {
+watch([() => props.point?.lon, () => props.point?.lat, () => props.point?.height], () => {
   updatePosition();
 });
 

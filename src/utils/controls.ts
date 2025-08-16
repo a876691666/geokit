@@ -63,6 +63,8 @@ export const getCameraLonLat = (camera: Camera) => {
   const direction = vectorScratch2.set(0, 0, 0.5).unproject(camera).sub(eye).normalize();
   const target = ellipsoid.getIntersection(rayScratch.set(eye, direction))!;
 
+  if (!target) return null;
+
   // 使用 Geodetic 将 ECEF 坐标转换为地理坐标
   _geodetic.setFromECEF(target);
 

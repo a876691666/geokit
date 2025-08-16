@@ -33,7 +33,7 @@ const props = withDefaults(
     cameraConfig: () => ({
       fov: 29,
       aspect: window.innerWidth / window.innerHeight,
-      near: 50,
+      near: 1,
       far: 10000,
       position: [0, 0, 1.75 * 1e7],
       lookAt: [0, 0, 0],
