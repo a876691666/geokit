@@ -7,15 +7,18 @@ import { createDOMEventHandlers, unbindDOMEvents, MouseEventHandlers } from "./e
 
 const rootDiv = document.createElement("img");
 
-const props = withDefaults(defineProps<{
-  point: Point;
-  size?: number;
-  icon: string;
-  renderOrder?: number;
-  id?: string;
-}>(), {
-  renderOrder: 1,
-});
+const props = withDefaults(
+  defineProps<{
+    point: Point;
+    size?: number;
+    icon: string;
+    renderOrder?: number;
+    id?: string;
+  }>(),
+  {
+    renderOrder: 1,
+  }
+);
 
 const emit = defineEmits<MouseEventHandlers>();
 
@@ -25,6 +28,7 @@ const update = () => {
   rootDiv.style.height = props.size + "px";
   rootDiv.style.left = "0";
   rootDiv.style.top = "0";
+  rootDiv.style.pointerEvents = "all";
 };
 
 const rootCSS2DObj = new CSS2DObject(rootDiv);
