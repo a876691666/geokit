@@ -62,13 +62,14 @@ export const updateTextureAnimation = (
   elapsed: number,
   duration: number,
   state: AnimationState,
-  reverse: boolean = false
+  reverse: boolean = false,
+  speed: number = 1
 ): void => {
   if (state.startTime === 0) {
     state.startTime = elapsed;
   }
 
-  const deltaTime = elapsed - state.startTime;
+  const deltaTime = (elapsed - state.startTime) * Math.max(0, speed);
   let progress = (deltaTime % duration) / duration;
   
   // 如果启用逆向动画，反转进度
@@ -88,13 +89,14 @@ export const updateMeshLineAnimation = (
   elapsed: number,
   duration: number,
   state: AnimationState,
-  reverse: boolean = false
+  reverse: boolean = false,
+  speed: number = 1
 ): void => {
   if (state.startTime === 0) {
     state.startTime = elapsed;
   }
 
-  const deltaTime = elapsed - state.startTime;
+  const deltaTime = (elapsed - state.startTime) * Math.max(0, speed);
   let progress = (deltaTime % duration) / duration;
   
   // 如果启用逆向动画，反转进度

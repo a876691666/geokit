@@ -15,12 +15,14 @@ interface GeoLineAnimationProps {
   autoStart?: boolean;
   duration?: number;
   reverse?: boolean; // 是否启用逆向动画
+  speed?: number; // 速度倍率，1为正常，>1更快，0为暂停
 }
 
 const props = withDefaults(defineProps<GeoLineAnimationProps>(), {
   autoStart: true,
   duration: 1000,
   reverse: false,
+  speed: 1,
 });
 
 const animationState = ref<AnimationState>({ startTime: 0, isAnimating: false });
@@ -73,14 +75,22 @@ onLoop(({ elapsed }) => {
         elapsed * 1000,
         props.duration,
         animationState.value,
-        props.reverse
+        props.reverse,
+        props.speed
       );
     } else if (type === "texture") {
       // 纹理动画（修改纹理的 offset）
       // 优先使用注册时提供的texture，否则使用props中的texture
       const targetTexture = texture || props.texture;
       if (targetTexture) {
-        updateTextureAnimation(targetTexture, elapsed * 1000, props.duration, animationState.value, props.reverse);
+        updateTextureAnimation(
+          targetTexture,
+          elapsed * 1000,
+          props.duration,
+          animationState.value,
+          props.reverse,
+          props.speed
+        );
       }
     }
   });
