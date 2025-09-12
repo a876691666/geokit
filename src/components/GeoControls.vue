@@ -69,15 +69,11 @@ const updateMapControls = () => {
   }
 };
 
-const stopTargetWatch = sleepWatch(
-  [targetPositionModel],
-  () => {
-    if (targetPositionModel.value && mapControls.value) {
-      mapControls.value.setCameraPosition(targetPositionModel.value);
-    }
-  },
-  { immediate: true, deep: true }
-);
+const stopTargetWatch = sleepWatch([targetPositionModel], () => {
+  if (targetPositionModel.value && mapControls.value) {
+    mapControls.value.setCameraPosition(targetPositionModel.value);
+  }
+});
 
 watch(
   [mapControls],
@@ -171,13 +167,9 @@ watch(
   { immediate: true, deep: true }
 );
 
-const stopWatch = sleepWatch(
-  [positionModel, camera],
-  () => {
-    updatePosition();
-  },
-  { immediate: true }
-);
+const stopWatch = sleepWatch([positionModel, camera], () => {
+  updatePosition();
+});
 
 onAfterRender(() => {
   // 更新当前激活的控制器

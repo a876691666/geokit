@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import MainIndex from "./pages/geoLineSegmentCase.vue";
+import MainIndex from "./pages/case-3dtiles.vue";
 </script>
 
 <template>
