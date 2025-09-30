@@ -179,15 +179,15 @@
       :height="currentFaceHeight"
     >
       <Suspense fallback="">
-        <UseTexture v-slot="{ textures }" map="/rain.png">
-          <GeoTextureProps :texture="textures.map" :rotation="time * 0.1" :center="[0.5, 0.5]" />
+        <UseTexture v-slot="{ state }" path="/rain.png">
+          <GeoTextureProps :texture="state" :rotation="time * 0.1" :center="[0.5, 0.5]" />
           <TresMeshStandardMaterial
             :color="currentColor"
             :transparent="currentOpacity < 1"
             :opacity="currentOpacity"
             :wireframe="isWireframe"
             :side="DoubleSide"
-            :map="textures.map"
+            :map="state"
           />
         </UseTexture>
       </Suspense>
@@ -196,15 +196,15 @@
     <!-- 地理墙体 -->
     <GeoWall :geometry="currentGeometry" :height="50" :baseHeight="0">
       <Suspense>
-        <UseTexture v-slot="{ textures }" map="/line2.png">
-          <GeoTextureProps :texture="textures.map" :rotation="time * 0.1" :center="[0.5, 0.5]" />
+        <UseTexture v-slot="{ state }" path="/line2.png">
+          <GeoTextureProps :texture="state" :rotation="time * 0.1" :center="[0.5, 0.5]" />
           <TresMeshStandardMaterial
             :color="currentColor"
             :transparent="currentOpacity < 1"
             :opacity="currentOpacity"
             :wireframe="isWireframe"
             :side="DoubleSide"
-            :map="textures.map"
+            :map="state"
           />
         </UseTexture>
       </Suspense>
@@ -225,7 +225,7 @@ import {
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { GeoPositionConfig } from "../config/type";
 import { DoubleSide } from "three";
-import { UseTexture } from "@tresjs/core";
+import { UseTexture } from "@tresjs/cientos";
 
 // 相机位置
 const cameraPosition = ref<GeoPositionConfig>({

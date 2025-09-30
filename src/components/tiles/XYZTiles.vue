@@ -3,12 +3,12 @@
 </template>
 
 <script setup lang="ts">
-import { useTresContext, useRenderLoop } from "@tresjs/core";
+import { useTres, useLoop } from "@tresjs/core";
 import { TilesRenderer } from "3d-tiles-renderer";
 import { TilesFadePlugin, UpdateOnChangePlugin, XYZTilesPlugin } from "3d-tiles-renderer/plugins";
 import { markRaw, watch, onUnmounted } from "vue";
 
-const { camera, renderer } = useTresContext() as any;
+const { camera, renderer } = useTres() as any;
 
 const props = withDefaults(
   defineProps<{
@@ -67,7 +67,7 @@ function reinstantiateTiles() {
   tiles.parseQueue.maxJobs = props.parseQueueMaxJobs;
   tiles.setCamera(camera.value);
 
-  tiles.setResolutionFromRenderer(camera.value, renderer.value);
+  tiles.setResolutionFromRenderer(camera.value, renderer);
   tiles.errorTarget = props.errorTarget;
   tiles.displayActiveTiles = props.displayActiveTiles;
   tiles.autoDisableRendererCulling = props.autoDisableRendererCulling;
@@ -94,11 +94,11 @@ watch(
   { deep: true }
 );
 
-const { onBeforeLoop } = useRenderLoop();
+const { onBeforeRender } = useLoop();
 
-onBeforeLoop(() => {
+onBeforeRender(() => {
   if (tiles) {
-    tiles.setResolutionFromRenderer(camera.value, renderer.value);
+    tiles.setResolutionFromRenderer(camera.value, renderer);
     tiles.update();
   }
 });

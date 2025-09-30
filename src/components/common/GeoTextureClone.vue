@@ -1,20 +1,14 @@
 <template>
-  <slot :textures="clonedTextures" />
+  <slot :texture="clonedTexture" />
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { onUnmounted, watch, shallowRef } from "vue";
+
 import type { Texture } from "three";
 
 interface TextureMap {
-  map?: Texture;
-  displacementMap?: Texture;
-  normalMap?: Texture;
-  roughnessMap?: Texture;
-  metalnessMap?: Texture;
-  aoMap?: Texture;
-  alphaMap?: Texture;
-  matcap?: Texture;
+  texture?: any | Texture;
 }
 
 const props = withDefaults(defineProps<TextureMap>(), {});
@@ -26,32 +20,29 @@ const cloneTexture = (texture?: Texture): Texture | undefined => {
 };
 
 // 计算属性，返回克隆后的贴图对象
-const clonedTextures = computed(() => {
-  const cloned: Required<TextureMap> = {
-    map: cloneTexture(props.map)!,
-    displacementMap: cloneTexture(props.displacementMap)!,
-    normalMap: cloneTexture(props.normalMap)!,
-    roughnessMap: cloneTexture(props.roughnessMap)!,
-    metalnessMap: cloneTexture(props.metalnessMap)!,
-    aoMap: cloneTexture(props.aoMap)!,
-    alphaMap: cloneTexture(props.alphaMap)!,
-    matcap: cloneTexture(props.matcap)!,
-  };
+const clonedTexture = shallowRef<Texture | undefined>();
 
-  return cloned;
-});
+watch(
+  () => props.texture,
+  (newTexture) => {
+    // 清理旧的贴图
+    if (clonedTexture.value) {
+      clonedTexture.value.dispose();
+    }
+    // 克隆新的贴图
+    clonedTexture.value = cloneTexture(newTexture);
+  },
+  { immediate: true }
+);
 
 // 组件销毁时清理克隆的贴图
 const cleanup = () => {
-  Object.values(clonedTextures.value).forEach((texture) => {
-    if (texture) {
-      texture.dispose();
-    }
-  });
+  if (clonedTexture.value) {
+    clonedTexture.value.dispose();
+  }
 };
 
 // 在组件卸载时清理资源
-import { onUnmounted } from "vue";
 onUnmounted(() => {
   cleanup();
 });

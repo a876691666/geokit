@@ -96,7 +96,7 @@ export interface TresGLTFLoaderType extends TresLoader<GLTF> {
  */
 function setExtensions(options: GLTFLoaderOptions, extendLoader?: (loader: TresGLTFLoaderType) => void) {
 	let dracoLoader: DRACOLoader | null = null
-	
+
 	const loaderExtension = (loader: TresGLTFLoaderType) => {
 		if (extendLoader) {
 			extendLoader(loader)
@@ -111,7 +111,7 @@ function setExtensions(options: GLTFLoaderOptions, extendLoader?: (loader: TresG
 			}
 		}
 	}
-	
+
 	return {
 		loaderExtension,
 		dracoLoader: () => dracoLoader
@@ -128,7 +128,7 @@ function setExtensions(options: GLTFLoaderOptions, extendLoader?: (loader: TresG
  * @param {(loader: TresGLTFLoaderType) => void} [extendLoader] - Function to extend the loader
  * @returns {Promise<T extends string[] ? GLTFResult[] : GLTFResult>} Promise that resolves with the loaded model(s)
  */
-export async function useGLTF<T extends string | string[]>(
+export async function useGLTF<T extends string>(
 	path: T,
 	options: GLTFLoaderOptions = {
 		draco: false,
@@ -136,13 +136,13 @@ export async function useGLTF<T extends string | string[]>(
 	extendLoader?: (loader: TresGLTFLoaderType) => void,
 ): Promise<T extends string[] ? GLTFResult[] : GLTFResult> {
 	const { loaderExtension, dracoLoader } = setExtensions(options, extendLoader)
-	const gltfModel = (await useLoader<GLTF>(TresGLTFLoader, path, loaderExtension)) as unknown as GLTFResult
-	
+	const gltfModel = (await useLoader<GLTF>(TresGLTFLoader, path, { extensions: loaderExtension })) as unknown as GLTFResult
+
 	// 清理当前实例的 dracoLoader
 	const currentDracoLoader = dracoLoader()
 	if (currentDracoLoader) {
 		currentDracoLoader.dispose()
 	}
-	
+
 	return gltfModel as T extends string[] ? GLTFResult[] : GLTFResult
 }

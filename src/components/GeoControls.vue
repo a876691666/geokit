@@ -10,15 +10,16 @@ import {
   onUnmounted,
   shallowRef,
 } from "vue";
-import { useTresContext, useLoop } from "@tresjs/core";
+import { useTres, useLoop } from "@tresjs/core";
 import { GeoPositionConfig, GeoSpherical, Point } from "../config/type";
+import * as THREE from "three";
 import {
   GeoMapControls,
   GeoGlobeControls,
   getECEFUpVector,
 } from "@/components/controls/GeoMapControls";
 
-const { scene, camera, renderer } = useTresContext();
+const { scene, camera, renderer } = useTres();
 
 const positionModel = defineModel<GeoPositionConfig>("position", { required: true });
 const targetPositionModel = defineModel<GeoSpherical>("target-position", { required: false });
@@ -55,7 +56,7 @@ const props = withDefaults(
   }
 );
 
-const { onAfterRender } = useLoop();
+const { onRender } = useLoop();
 
 let globeControls: GeoGlobeControls | null = null;
 let mapControls = shallowRef<GeoMapControls | null>(null);
@@ -94,8 +95,8 @@ const switchControls = () => {
       globeControls.enabled = false;
     }
 
-    if (!mapControls.value && camera.value && renderer.value) {
-      mapControls.value = new GeoMapControls(camera.value, renderer.value.domElement);
+    if (!mapControls.value && camera.value && renderer) {
+      mapControls.value = new GeoMapControls(camera.value, renderer.domElement);
       mapControls.value.enableDamping = props.enableDamping;
       mapControls.value.minDistance = props.minDistance;
       mapControls.value.addEventListener("target-change" as any, () => {
@@ -130,8 +131,12 @@ const switchControls = () => {
 };
 
 onMounted(() => {
-  if (camera.value && renderer.value && scene.value) {
-    globeControls = new GeoGlobeControls(scene.value, camera.value, renderer.value.domElement);
+  if (camera.value && renderer && scene.value) {
+    globeControls = new GeoGlobeControls(
+      scene.value as any,
+      camera.value,
+      renderer.domElement
+    );
     // @ts-ignore
     globeControls.setTilesRenderer({ group: scene.value });
     globeControls.enableDamping = props.enableDamping;
@@ -171,7 +176,7 @@ const stopWatch = sleepWatch([positionModel, camera], () => {
   updatePosition();
 });
 
-onAfterRender(() => {
+onRender(() => {
   // 更新当前激活的控制器
   if (props.target && mapControls.value?.enabled) {
     mapControls.value.update();

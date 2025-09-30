@@ -23,7 +23,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref, reactive, withDefaults } from "vue";
-import { useTresContext } from "@tresjs/core";
+import { useTres } from "@tresjs/core";
 import { EffectComposerPmndrs, TiltShiftPmndrs } from "@tresjs/post-processing";
 import * as THREE from "three";
 import { GeoSceneConfig } from "../config/type";
@@ -61,7 +61,7 @@ const directionalLightConfig = reactive(sceneConfig.directionalLight);
 const ambientLightRef = ref(null);
 const directionalLightRef = ref(null);
 
-const { scene } = useTresContext();
+const { scene } = useTres();
 onMounted(() => {
   const textureLoader = new THREE.TextureLoader();
 

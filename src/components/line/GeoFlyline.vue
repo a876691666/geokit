@@ -13,7 +13,7 @@ interface GeoFlylineProps extends GeoInteractiveProps {
   type?: "mesh" | "tube";
   color?: string;
   width?: number;
-  map?: Texture; // 纹理贴图
+  map?: any | Texture; // 纹理贴图
   autoStart?: boolean; // 自动启动动画
   arcHeight?: number; // 弧度高度，默认为两点距离的20%
   segments?: number; // 弧线分段数，默认20
@@ -50,7 +50,9 @@ const calculatedPoints = ref<Point[]>([]);
 const animationRef = ref<InstanceType<typeof GeoLineAnimation>>();
 
 // 检测是否已经被 GeoLineAnimation 包裹
-const registerAnimationTarget = inject<((target: any, type: "meshline" | "texture", texture?: Texture) => void) | null>("registerAnimationTarget", null);
+const registerAnimationTarget = inject<
+  ((target: any, type: "meshline" | "texture", texture?: Texture) => void) | null
+>("registerAnimationTarget", null);
 const hasParentAnimation = computed(() => registerAnimationTarget !== null);
 
 // 计算两点之间的距离（简化计算）
@@ -111,14 +113,18 @@ defineExpose({
   startAnimation: () => {
     if (hasParentAnimation.value) {
       // 如果有父级动画，则无法直接控制，需要通过父级控制
-      console.warn('GeoFlyline is wrapped by GeoLineAnimation, please control animation through parent component');
+      console.warn(
+        "GeoFlyline is wrapped by GeoLineAnimation, please control animation through parent component"
+      );
       return;
     }
     return animationRef.value?.start();
   },
   stopAnimation: () => {
     if (hasParentAnimation.value) {
-      console.warn('GeoFlyline is wrapped by GeoLineAnimation, please control animation through parent component');
+      console.warn(
+        "GeoFlyline is wrapped by GeoLineAnimation, please control animation through parent component"
+      );
       return;
     }
     return animationRef.value?.stop();
@@ -188,7 +194,7 @@ defineExpose({
       @wheel="(...args) => emit('wheel', ...args)"
     />
   </GeoLineAnimation>
-  
+
   <!-- 如果已有父级 GeoLineAnimation，则直接渲染线条组件 -->
   <template v-else>
     <GeoTubeline

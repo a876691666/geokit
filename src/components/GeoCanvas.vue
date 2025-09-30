@@ -46,10 +46,10 @@ const { canvasConfig, cameraConfig } = props;
 const canvasRef = ref<InstanceType<typeof TresCanvas> | null>(null);
 
 onMounted(() => {
-  const renderer = canvasRef.value?.context?.renderer;
-  if (renderer?.value) {
+  const renderer = canvasRef.value?.context?.renderer?.instance;
+  if (renderer) {
     window.devicePixelRatio = canvasConfig.pixelRatio;
-    renderer.value.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(window.devicePixelRatio);
   }
 });
 </script>

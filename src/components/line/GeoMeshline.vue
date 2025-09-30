@@ -24,7 +24,7 @@ interface GeoMeshlineProps extends GeoInteractiveProps {
   dashArray?: number;
   dashRatio?: number;
   dashOffset?: number;
-  map?: Texture;
+  map?: any | Texture;
   renderOrder?: number;
   opacity?: number;
   repeat?: number[];

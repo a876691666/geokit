@@ -13,7 +13,7 @@ import type {
 
 const props = withDefaults(
   defineProps<{
-    texture: Texture;
+    texture: any | Texture;
     // 基本变换属性
     center?: [number, number];
     rotation?: number;

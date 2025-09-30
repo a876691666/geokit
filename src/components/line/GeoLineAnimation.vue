@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, provide } from "vue";
-import { useRenderLoop } from "@tresjs/core";
+import { useLoop } from "@tresjs/core";
 import { Texture } from "three";
 import {
   AnimationState,
@@ -30,7 +30,7 @@ const animationTargets = ref<
   Array<{ target: any; type: "meshline" | "texture"; texture?: any }>
 >([]);
 
-const { onLoop } = useRenderLoop();
+const { onRender } = useLoop();
 
 // 提供给子组件注册动画目标的方法
 provide(
@@ -58,7 +58,7 @@ provide("unregisterAnimationTarget", (target: any) => {
 });
 
 // 动画循环
-onLoop(({ elapsed }) => {
+onRender(({ elapsed }) => {
   // 如果没有启用自动启动或没有设置持续时间，则不执行动画
   if (!props.autoStart || !props.duration || !animationState.value.isAnimating) return;
 

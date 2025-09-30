@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, shallowRef } from "vue";
-import { useLoop, useTresContext } from "@tresjs/core";
+import { useLoop, useTres } from "@tresjs/core";
 import { CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
+import * as THREE from "three";
 
-const { camera, renderer } = useTresContext();
+const { camera, renderer } = useTres();
 const css2dRenderer = shallowRef<CSS2DRenderer>();
 
 const onResize = () => {
@@ -22,12 +23,12 @@ onMounted(() => {
   css2dRenderer.value.domElement.style.left = "0";
   css2dRenderer.value.domElement.style.pointerEvents = "none";
 
-  renderer.value.domElement?.parentElement?.appendChild(css2dRenderer.value.domElement);
+  renderer.domElement?.parentElement?.appendChild(css2dRenderer.value.domElement);
 
-  const { onAfterRender } = useLoop();
+  const { onRender } = useLoop();
 
-  onAfterRender(({ scene, camera }) => {
-    css2dRenderer.value?.render(scene, camera);
+  onRender(({ scene, camera }) => {
+    css2dRenderer.value?.render(scene.value as THREE.Scene, camera.value as THREE.Camera);
   });
 
   window.addEventListener("resize", onResize);
@@ -35,6 +36,6 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", onResize);
-  renderer.value.domElement?.parentElement?.removeChild(css2dRenderer.value!.domElement);
+  renderer.domElement?.parentElement?.removeChild(css2dRenderer.value!.domElement);
 });
 </script>

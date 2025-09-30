@@ -37,7 +37,7 @@ interface GeoMeshlineSegmentProps extends GeoInteractiveProps {
   color?: string;
   width?: number;
   sizeAttenuation?: boolean;
-  map?: Texture;
+  map?: any | Texture;
   renderOrder?: number;
   opacity?: number;
   repeat?: number[]; // 纹理平铺

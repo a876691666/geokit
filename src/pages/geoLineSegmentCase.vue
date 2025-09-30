@@ -28,9 +28,9 @@
     <GeoScene />
     <TDTTiles tk="60e749f74ee948da9887c8a82fc20e09" />
     <Suspense>
-      <UseTexture v-slot="{ textures }" :map="textureUrl" v-if="useTexture">
-        <GeoTextureProps :texture="textures.map" :repeat="[1,1]" :wrapS="THREE.RepeatWrapping" :wrapT="THREE.RepeatWrapping" />
-        <GeoMeshlineSegment :start="start" :end="end" :color="color" :width="width" :map="textures.map" :opacity="0.95" />
+      <UseTexture v-slot="{ state }" :path="textureUrl" v-if="useTexture">
+        <GeoTextureProps :texture="state" :repeat="[1,1]" :wrapS="THREE.RepeatWrapping" :wrapT="THREE.RepeatWrapping" />
+        <GeoMeshlineSegment :start="start" :end="end" :color="color" :width="width" :map="state" :opacity="0.95" />
       </UseTexture>
       <template v-else>
         <GeoMeshlineSegment :start="start" :end="end" :color="color" :width="width" />
@@ -42,7 +42,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { GeoCanvas, GeoControls, TDTTiles, GeoScene, GeoMeshlineSegment, GeoTextureProps, GeoPositionConfig } from '..';
-import { UseTexture } from '@tresjs/core';
+import { UseTexture } from '@tresjs/cientos';
 import * as THREE from 'three';
 
 const cameraPosition = ref<GeoPositionConfig>({

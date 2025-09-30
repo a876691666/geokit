@@ -26,7 +26,7 @@ interface GeoLineProps extends GeoInteractiveProps {
   points: Point[];
   color?: string;
   width?: number;
-  map?: Texture;
+  map?: any | Texture;
   renderOrder?: number;
 }
 

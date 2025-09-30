@@ -29,7 +29,7 @@ interface GeoTubelineProps extends GeoInteractiveProps {
   color?: string;
   width?: number;
   tubularSegments?: number;
-  map?: Texture;
+  map?: any | Texture;
   renderOrder?: number;
   opacity?: number;
   repeat?: number[];

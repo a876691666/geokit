@@ -67,7 +67,7 @@
   <GeoCanvas>
     <GeoControls v-model:position="position" />
     <GeoScene :sceneConfig="sceneConfig" />
-    <Tileset url="/plugins/geokit/tiles/tileset.json" />
+    <!-- <Tileset url="/plugins/geokit/tiles/tileset.json" /> -->
     <XYZTiles url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
     <GeoPosition name="GeoPosition" :point="boxPosition">
       <TresMesh>

@@ -216,9 +216,9 @@
 
     <!-- 飞线示例 - 使用内置动画功能 -->
     <Suspense>
-      <UseTexture v-slot="{ textures }" :map="textureUrl">
+      <UseTexture v-slot="{ state }" :path="textureUrl">
         <GeoTextureProps
-          :texture="textures.map"
+          :texture="state"
           :repeat="[1, 1]"
           :wrapS="THREE.RepeatWrapping"
           :wrapT="THREE.RepeatWrapping"
@@ -230,7 +230,7 @@
           type="tube"
           color="#00ff00"
           :width="currentWidth + 1"
-          :map="textures.map"
+          :map="state"
           :arcHeight="currentArcHeight * 0.8"
           :segments="currentSegments"
           autoStart
@@ -239,21 +239,16 @@
         />
 
         <!-- 基础线条 - 使用统一的颜色、宽度、贴图和动画 -->
-        <GeoLine
-          :points="linePoints1"
-          :color="currentColor"
-          :width="currentWidth"
-          :map="textures.map"
-        />
+        <GeoLine :points="linePoints1" :color="currentColor" :width="currentWidth" :map="state" />
 
-        <GeoTextureClone :="textures" v-slot="{ textures }">
+        <GeoTextureClone :="{ texture: state }" v-slot="{ texture }">
           <GeoLineAnimation :reverse="isReverse" :duration="300">
             <!-- 管道线条 - 使用统一的颜色、宽度、贴图和动画 -->
             <GeoTubeline
               :points="linePoints2"
               :color="currentColor"
               :width="currentWidth"
-              :map="textures.map"
+              :map="texture"
             />
           </GeoLineAnimation>
         </GeoTextureClone>
@@ -267,7 +262,7 @@
             :dashArray="isDashed ? 0.2 : 0"
             :dashRatio="0.5"
             :dashOffset="0"
-            :map="textures.map"
+            :map="state"
           />
         </GeoLineAnimation>
 
@@ -278,7 +273,7 @@
           type="mesh"
           :color="currentColor"
           :width="currentWidth"
-          :map="textures.map"
+          :map="state"
           :duration="isAnimating ? animationDuration : undefined"
           :arcHeight="currentArcHeight"
           :segments="currentSegments"
@@ -292,7 +287,7 @@
           type="mesh"
           :color="currentColor"
           :width="currentWidth"
-          :map="textures.map"
+          :map="state"
           :duration="isAnimating ? animationDuration : undefined"
           :arcHeight="currentArcHeight * 1.5"
           :segments="currentSegments"
@@ -306,7 +301,7 @@
           type="mesh"
           :color="currentColor"
           :width="currentWidth"
-          :map="textures.map"
+          :map="state"
           :duration="isAnimating ? animationDuration : undefined"
           :arcHeight="currentArcHeight * 2"
           :segments="currentSegments"
@@ -332,7 +327,7 @@ import {
   GeoPositionConfig,
 } from "..";
 import { ref, computed } from "vue";
-import { UseTexture } from "@tresjs/core";
+import { UseTexture } from "@tresjs/cientos";
 import GeoTextureProps from "@/components/common/GeoTextureProps.vue";
 import * as THREE from "three";
 
