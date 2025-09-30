@@ -54,7 +54,7 @@ export interface DirectionalLight {
 }
 
 export interface GeoSceneConfig {
-  effectProps: EffectProps;
+  // effectProps: EffectProps;
   ambientLight: AmbientLight;
   directionalLight: DirectionalLight;
   background: string;

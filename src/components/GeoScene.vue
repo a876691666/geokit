@@ -1,11 +1,11 @@
 <template>
   <TresGroup>
     <slot />
-    <Suspense v-if="effectProps.enabled">
+    <!-- <Suspense v-if="effectProps.enabled">
       <EffectComposerPmndrs>
         <TiltShiftPmndrs :focusArea="effectProps.focusArea" :feather="effectProps.feather" />
       </EffectComposerPmndrs>
-    </Suspense>
+    </Suspense> -->
 
     <TresAmbientLight
       ref="ambientLightRef"
@@ -24,7 +24,7 @@
 <script setup lang="ts">
 import { onMounted, ref, reactive, withDefaults } from "vue";
 import { useTres } from "@tresjs/core";
-import { EffectComposerPmndrs, TiltShiftPmndrs } from "@tresjs/post-processing";
+// import { EffectComposerPmndrs, TiltShiftPmndrs } from "@tresjs/post-processing";
 import * as THREE from "three";
 import { GeoSceneConfig } from "../config/type";
 
@@ -34,11 +34,11 @@ const props = withDefaults(
   }>(),
   {
     sceneConfig: () => ({
-      effectProps: {
-        enabled: true,
-        focusArea: 0.7,
-        feather: 0.1,
-      },
+      // effectProps: {
+      //   enabled: true,
+      //   focusArea: 0.7,
+      //   feather: 0.1,
+      // },
       ambientLight: {
         color: "#fff",
         intensity: 1,
@@ -54,7 +54,7 @@ const props = withDefaults(
 );
 
 const { sceneConfig } = props;
-const effectProps = reactive(sceneConfig.effectProps);
+// const effectProps = reactive(sceneConfig.effectProps);
 const ambientLightConfig = reactive(sceneConfig.ambientLight);
 const directionalLightConfig = reactive(sceneConfig.directionalLight);
 
