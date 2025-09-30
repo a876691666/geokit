@@ -33,13 +33,13 @@ const props = withDefaults(defineProps<GeoPointProps>(), {
 
 const emit = defineEmits<{
   click: GeoPointEvent;
-  "double-click": GeoPointEvent;
-  "context-menu": GeoPointEvent;
-  "pointer-enter": GeoPointEvent;
-  "pointer-leave": GeoPointEvent;
-  "pointer-over": GeoPointEvent;
-  "pointer-down": GeoPointEvent;
-  "pointer-up": GeoPointEvent;
+  "doubleclick": GeoPointEvent;
+  "contextmenu": GeoPointEvent;
+  "pointerenter": GeoPointEvent;
+  "pointerleave": GeoPointEvent;
+  "pointerover": GeoPointEvent;
+  "pointerdown": GeoPointEvent;
+  "pointerup": GeoPointEvent;
   wheel: GeoPointEvent;
 }>();
 
@@ -114,13 +114,13 @@ const handleEvent = (eventName: string) => {
 };
 
 const handleClick = handleEvent("click");
-const handleDoubleClick = handleEvent("double-click");
-const handleContextMenu = handleEvent("context-menu");
-const handlePointerEnter = handleEvent("pointer-enter");
-const handlePointerLeave = handleEvent("pointer-leave");
-const handlePointerOver = handleEvent("pointer-over");
-const handlePointerDown = handleEvent("pointer-down");
-const handlePointerUp = handleEvent("pointer-up");
+const handleDoubleClick = handleEvent("doubleclick");
+const handleContextMenu = handleEvent("contextmenu");
+const handlePointerEnter = handleEvent("pointerenter");
+const handlePointerLeave = handleEvent("pointerleave");
+const handlePointerOver = handleEvent("pointerover");
+const handlePointerDown = handleEvent("pointerdown");
+const handlePointerUp = handleEvent("pointerup");
 const handleWheel = handleEvent("wheel");
 
 onMounted(createPoint);
@@ -141,13 +141,13 @@ onUnmounted(() => {
       :object="point"
       v-if="point"
       @click="handleClick"
-      @double-click="handleDoubleClick"
-      @context-menu="handleContextMenu"
-      @pointer-enter="handlePointerEnter"
-      @pointer-leave="handlePointerLeave"
-      @pointer-over="handlePointerOver"
-      @pointer-down="handlePointerDown"
-      @pointer-up="handlePointerUp"
+      @doubleclick="handleDoubleClick"
+      @contextmenu="handleContextMenu"
+      @pointerenter="handlePointerEnter"
+      @pointerleave="handlePointerLeave"
+      @pointerover="handlePointerOver"
+      @pointerdown="handlePointerDown"
+      @pointerup="handlePointerUp"
       @wheel="handleWheel"
     ></primitive>
   </GeoPosition>

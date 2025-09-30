@@ -41,13 +41,13 @@ onMounted(() => {
   update();
   // 绑定DOM事件
   rootDiv.addEventListener("click", eventHandlers.click);
-  rootDiv.addEventListener("dblclick", eventHandlers["double-click"]);
-  rootDiv.addEventListener("contextmenu", eventHandlers["context-menu"]);
-  rootDiv.addEventListener("pointerenter", eventHandlers["pointer-enter"]);
-  rootDiv.addEventListener("pointerleave", eventHandlers["pointer-leave"]);
-  rootDiv.addEventListener("pointerover", eventHandlers["pointer-over"]);
-  rootDiv.addEventListener("pointerdown", eventHandlers["pointer-down"]);
-  rootDiv.addEventListener("pointerup", eventHandlers["pointer-up"]);
+  rootDiv.addEventListener("dblclick", eventHandlers["doubleclick"]);
+  rootDiv.addEventListener("contextmenu", eventHandlers["contextmenu"]);
+  rootDiv.addEventListener("pointerenter", eventHandlers["pointerenter"]);
+  rootDiv.addEventListener("pointerleave", eventHandlers["pointerleave"]);
+  rootDiv.addEventListener("pointerover", eventHandlers["pointerover"]);
+  rootDiv.addEventListener("pointerdown", eventHandlers["pointerdown"]);
+  rootDiv.addEventListener("pointerup", eventHandlers["pointerup"]);
   rootDiv.addEventListener("wheel", eventHandlers.wheel);
 });
 

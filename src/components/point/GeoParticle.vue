@@ -39,13 +39,13 @@ type GeoParticleEvent = GeoMouseEvent<Point<{ color?: string; [key: string]: any
 
 const emit = defineEmits<{
   click: GeoParticleEvent;
-  "double-click": GeoParticleEvent;
-  "context-menu": GeoParticleEvent;
-  "pointer-enter": GeoParticleEvent;
-  "pointer-leave": GeoParticleEvent;
-  "pointer-over": GeoParticleEvent;
-  "pointer-down": GeoParticleEvent;
-  "pointer-up": GeoParticleEvent;
+  "doubleclick": GeoParticleEvent;
+  "contextmenu": GeoParticleEvent;
+  "pointerenter": GeoParticleEvent;
+  "pointerleave": GeoParticleEvent;
+  "pointerover": GeoParticleEvent;
+  "pointerdown": GeoParticleEvent;
+  "pointerup": GeoParticleEvent;
   wheel: GeoParticleEvent;
 }>();
 
@@ -186,13 +186,13 @@ const handleEvent = (eventName: string) => (event: MouseEvent & { index: number 
 };
 
 const handleClick = handleEvent("click");
-const handleDoubleClick = handleEvent("double-click");
-const handleContextMenu = handleEvent("context-menu");
-const handlePointerEnter = handleEvent("pointer-enter");
-const handlePointerLeave = handleEvent("pointer-leave");
-const handlePointerOver = handleEvent("pointer-over");
-const handlePointerDown = handleEvent("pointer-down");
-const handlePointerUp = handleEvent("pointer-up");
+const handleDoubleClick = handleEvent("doubleclick");
+const handleContextMenu = handleEvent("contextmenu");
+const handlePointerEnter = handleEvent("pointerenter");
+const handlePointerLeave = handleEvent("pointerleave");
+const handlePointerOver = handleEvent("pointerover");
+const handlePointerDown = handleEvent("pointerdown");
+const handlePointerUp = handleEvent("pointerup");
 const handleWheel = handleEvent("wheel");
 
 onMounted(() => {
@@ -215,13 +215,13 @@ onUnmounted(() => {
     :object="points"
     v-if="points"
     @click="handleClick"
-    @double-click="handleDoubleClick"
-    @context-menu="handleContextMenu"
-    @pointer-enter="handlePointerEnter"
-    @pointer-leave="handlePointerLeave"
-    @pointer-over="handlePointerOver"
-    @pointer-down="handlePointerDown"
-    @pointer-up="handlePointerUp"
+    @doubleclick="handleDoubleClick"
+    @contextmenu="handleContextMenu"
+    @pointerenter="handlePointerEnter"
+    @pointerleave="handlePointerLeave"
+    @pointerover="handlePointerOver"
+    @pointerdown="handlePointerDown"
+    @pointerup="handlePointerUp"
     @wheel="handleWheel"
   ></primitive>
 </template>

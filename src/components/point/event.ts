@@ -4,24 +4,24 @@ export type GeoPointEvent = GeoMouseEvent<any>;
 
 export type EventNames =
   | "click"
-  | "double-click"
-  | "context-menu"
-  | "pointer-enter"
-  | "pointer-leave"
-  | "pointer-over"
-  | "pointer-down"
-  | "pointer-up"
+  | "doubleclick"
+  | "contextmenu"
+  | "pointerenter"
+  | "pointerleave"
+  | "pointerover"
+  | "pointerdown"
+  | "pointerup"
   | "wheel";
 
 export interface MouseEventHandlers {
   click: GeoPointEvent;
-  "double-click": GeoPointEvent;
-  "context-menu": GeoPointEvent;
-  "pointer-enter": GeoPointEvent;
-  "pointer-leave": GeoPointEvent;
-  "pointer-over": GeoPointEvent;
-  "pointer-down": GeoPointEvent;
-  "pointer-up": GeoPointEvent;
+  "doubleclick": GeoPointEvent;
+  "contextmenu": GeoPointEvent;
+  "pointerenter": GeoPointEvent;
+  "pointerleave": GeoPointEvent;
+  "pointerover": GeoPointEvent;
+  "pointerdown": GeoPointEvent;
+  "pointerup": GeoPointEvent;
   wheel: GeoPointEvent;
 }
 
@@ -47,13 +47,13 @@ export function createDOMEventHandlers(emit: any, point: any, domElement?: HTMLE
 
   const handlers = {
     click: createHandler("click"),
-    "double-click": createHandler("double-click"),
-    "context-menu": createHandler("context-menu"),
-    "pointer-enter": createHandler("pointer-enter"),
-    "pointer-leave": createHandler("pointer-leave"),
-    "pointer-over": createHandler("pointer-over"),
-    "pointer-down": createHandler("pointer-down"),
-    "pointer-up": createHandler("pointer-up"),
+    "doubleclick": createHandler("doubleclick"),
+    "contextmenu": createHandler("contextmenu"),
+    "pointerenter": createHandler("pointerenter"),
+    "pointerleave": createHandler("pointerleave"),
+    "pointerover": createHandler("pointerover"),
+    "pointerdown": createHandler("pointerdown"),
+    "pointerup": createHandler("pointerup"),
     wheel: createHandler("wheel"),
   };
 
@@ -75,13 +75,13 @@ export function bindDOMEvents(
   handlers: ReturnType<typeof createDOMEventHandlers>
 ) {
   element.addEventListener("click", handlers.click);
-  element.addEventListener("dblclick", handlers["double-click"]);
-  element.addEventListener("contextmenu", handlers["context-menu"]);
-  element.addEventListener("pointerenter", handlers["pointer-enter"]);
-  element.addEventListener("pointerleave", handlers["pointer-leave"]);
-  element.addEventListener("pointerover", handlers["pointer-over"]);
-  element.addEventListener("pointerdown", handlers["pointer-down"]);
-  element.addEventListener("pointerup", handlers["pointer-up"]);
+  element.addEventListener("dblclick", handlers["doubleclick"]);
+  element.addEventListener("contextmenu", handlers["contextmenu"]);
+  element.addEventListener("pointerenter", handlers["pointerenter"]);
+  element.addEventListener("pointerleave", handlers["pointerleave"]);
+  element.addEventListener("pointerover", handlers["pointerover"]);
+  element.addEventListener("pointerdown", handlers["pointerdown"]);
+  element.addEventListener("pointerup", handlers["pointerup"]);
   element.addEventListener("wheel", handlers.wheel);
 }
 
@@ -95,12 +95,12 @@ export function unbindDOMEvents(
   handlers: ReturnType<typeof createDOMEventHandlers>
 ) {
   element.removeEventListener("click", handlers.click);
-  element.removeEventListener("dblclick", handlers["double-click"]);
-  element.removeEventListener("contextmenu", handlers["context-menu"]);
-  element.removeEventListener("pointerenter", handlers["pointer-enter"]);
-  element.removeEventListener("pointerleave", handlers["pointer-leave"]);
-  element.removeEventListener("pointerover", handlers["pointer-over"]);
-  element.removeEventListener("pointerdown", handlers["pointer-down"]);
-  element.removeEventListener("pointerup", handlers["pointer-up"]);
+  element.removeEventListener("dblclick", handlers["doubleclick"]);
+  element.removeEventListener("contextmenu", handlers["contextmenu"]);
+  element.removeEventListener("pointerenter", handlers["pointerenter"]);
+  element.removeEventListener("pointerleave", handlers["pointerleave"]);
+  element.removeEventListener("pointerover", handlers["pointerover"]);
+  element.removeEventListener("pointerdown", handlers["pointerdown"]);
+  element.removeEventListener("pointerup", handlers["pointerup"]);
   element.removeEventListener("wheel", handlers.wheel);
 }

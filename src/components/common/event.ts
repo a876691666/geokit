@@ -7,13 +7,13 @@ export type GeoMouseEvent<D extends any> = [PointEvent, D, index: number];
 // 通用的地理组件事件类型
 export interface GeoEventEmits {
   click: GeoMouseEvent<any>;
-  "double-click": GeoMouseEvent<any>;
-  "context-menu": GeoMouseEvent<any>;
-  "pointer-enter": GeoMouseEvent<any>;
-  "pointer-leave": GeoMouseEvent<any>;
-  "pointer-over": GeoMouseEvent<any>;
-  "pointer-down": GeoMouseEvent<any>;
-  "pointer-up": GeoMouseEvent<any>;
+  "doubleclick": GeoMouseEvent<any>;
+  "contextmenu": GeoMouseEvent<any>;
+  "pointerenter": GeoMouseEvent<any>;
+  "pointerleave": GeoMouseEvent<any>;
+  "pointerover": GeoMouseEvent<any>;
+  "pointerdown": GeoMouseEvent<any>;
+  "pointerup": GeoMouseEvent<any>;
   wheel: GeoMouseEvent<any>;
 }
 
@@ -35,13 +35,13 @@ export const createEventHandler = (
 
   return {
     handleClick: handleEvent("click"),
-    handleDoubleClick: handleEvent("double-click"),
-    handleContextMenu: handleEvent("context-menu"),
-    handlePointerEnter: handleEvent("pointer-enter"),
-    handlePointerLeave: handleEvent("pointer-leave"),
-    handlePointerOver: handleEvent("pointer-over"),
-    handlePointerDown: handleEvent("pointer-down"),
-    handlePointerUp: handleEvent("pointer-up"),
+    handleDoubleClick: handleEvent("doubleclick"),
+    handleContextMenu: handleEvent("contextmenu"),
+    handlePointerEnter: handleEvent("pointerenter"),
+    handlePointerLeave: handleEvent("pointerleave"),
+    handlePointerOver: handleEvent("pointerover"),
+    handlePointerDown: handleEvent("pointerdown"),
+    handlePointerUp: handleEvent("pointerup"),
     handleWheel: handleEvent("wheel"),
   };
 };
